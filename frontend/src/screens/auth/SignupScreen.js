@@ -155,6 +155,88 @@ export default function SignupScreen({ navigation }) {
     Alert.alert('Your Recovery Codes', generatedCodes.join('\n'));
   };
 
+  const saveAsTxt = async () => {
+    try {
+      const FileSystem = require('expo-file-system');
+      const Sharing = require('expo-sharing');
+      
+      const fileContent = `====================================\n        RELAY RECOVERY CODES\n====================================\n\nAccount: ${form.email || form.username}\nGenerated: ${new Date().toLocaleString()}\n\nIMPORTANT: Save these 8 codes in a safe place. Each code can be used once to reset your password if you forget it.\n\n` + generatedCodes.map((c, i) => `${i + 1}. ${c}`).join('\n') + `\n\n====================================\n`;
+
+      const dir = FileSystem.cacheDirectory || FileSystem.documentDirectory;
+      const fileUri = `${dir}Relay_Recovery_Codes.txt`;
+      await FileSystem.writeAsStringAsync(fileUri, fileContent, { encoding: FileSystem.EncodingType?.UTF8 || 'utf8' });
+
+      if (Sharing && typeof Sharing.shareAsync === 'function' && await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(fileUri, {
+          mimeType: 'text/plain',
+          dialogTitle: 'Save Recovery Codes (TXT)',
+          UTI: 'public.plain-text',
+        });
+      } else {
+        Alert.alert('Saved to Device', `File saved to:\n${fileUri}`);
+      }
+    } catch (err) {
+      Alert.alert('Error', err.message || 'Unable to save text file');
+    }
+  };
+
+  const saveAsPdf = async () => {
+    try {
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <style>
+            body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; background-color: #0d1117; color: #ffffff; }
+            .header { text-align: center; border-bottom: 2px solid #238636; padding-bottom: 20px; margin-bottom: 30px; }
+            .title { font-size: 26px; font-weight: bold; color: #2ea44f; margin: 0; }
+            .subtitle { font-size: 14px; color: #8b949e; margin-top: 8px; }
+            .info-box { background-color: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 16px; margin-bottom: 30px; line-height: 1.6; font-size: 14px; color: #c9d1d9; }
+            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 30px; }
+            .code-box { background-color: #161b22; border: 1px solid #238636; border-radius: 8px; padding: 14px; font-family: monospace; font-size: 18px; font-weight: bold; color: #3fb950; text-align: center; }
+            .footer { text-align: center; font-size: 12px; color: #8b949e; border-top: 1px solid #30363d; padding-top: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1 class="title">RELAY RECOVERY CODES</h1>
+            <p class="subtitle">Official Account Security Backup</p>
+          </div>
+          <div class="info-box">
+            <strong>Account:</strong> ${form.email || form.username}<br />
+            <strong>Date Generated:</strong> ${new Date().toLocaleString()}<br />
+            <strong>Notice:</strong> Keep these 8 one-time recovery codes confidential. Each code can be used exactly once to regain access if you lose your password.
+          </div>
+          <div class="grid">
+            ${generatedCodes.map((c, i) => `<div class="code-box">${i + 1}. ${c}</div>`).join('')}
+          </div>
+          <div class="footer">
+            Relay Messaging App &bull; End-to-End Account Protection
+          </div>
+        </body>
+        </html>
+      `;
+
+      const Print = require('expo-print');
+      const Sharing = require('expo-sharing');
+      
+      const { uri } = await Print.printToFileAsync({ html: htmlContent });
+      
+      if (Sharing && typeof Sharing.shareAsync === 'function' && await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'application/pdf',
+          dialogTitle: 'Save Recovery Codes (PDF)',
+          UTI: 'com.adobe.pdf',
+        });
+      } else {
+        Alert.alert('PDF Generated', `PDF saved to:\n${uri}`);
+      }
+    } catch (err) {
+      saveAsTxt();
+    }
+  };
+
   return (
     <LinearGradient colors={['#080F14', '#04070B']} style={[styles.container, { paddingTop: Math.max(insets.top, StatusBar.currentHeight || 0) }]}>
       <StatusBar barStyle="light-content" translucent />
@@ -317,10 +399,23 @@ export default function SignupScreen({ navigation }) {
               ))}
             </View>
 
-            <TouchableOpacity onPress={copyCodes} style={styles.copyBtn} activeOpacity={0.8}>
-              <Ionicons name={copied ? "checkmark-circle" : "copy-outline"} size={20} color="#FFF" />
-              <Text style={styles.copyBtnText}>{copied ? "Copied All Codes!" : "Copy All Codes"}</Text>
-            </TouchableOpacity>
+            {/* Action Buttons Row */}
+            <View style={styles.actionRow}>
+              <TouchableOpacity onPress={copyCodes} style={styles.actionBtn} activeOpacity={0.8}>
+                <Ionicons name={copied ? "checkmark-circle" : "copy-outline"} size={18} color={Colors.primary} />
+                <Text style={styles.actionBtnText}>{copied ? "Copied!" : "Copy"}</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={saveAsTxt} style={styles.actionBtn} activeOpacity={0.8}>
+                <Ionicons name="document-text-outline" size={18} color={Colors.accentGreen} />
+                <Text style={styles.actionBtnText}>Save TXT</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={saveAsPdf} style={styles.actionBtn} activeOpacity={0.8}>
+                <Ionicons name="document-attach-outline" size={18} color="#F59E0B" />
+                <Text style={styles.actionBtnText}>Save PDF</Text>
+              </TouchableOpacity>
+            </View>
 
             <TouchableOpacity onPress={handleModalDone} style={styles.doneBtn} activeOpacity={0.85}>
               <LinearGradient colors={[Colors.primary, Colors.primaryDark]} style={styles.doneBtnGrad}>
@@ -419,19 +514,24 @@ const styles = StyleSheet.create({
   },
   codeIndex: { color: Colors.dark.muted, fontSize: 12, marginRight: 6, fontWeight: '600' },
   codeText: { color: Colors.accentGreen, fontSize: 14, fontWeight: '700', letterSpacing: 0.5 },
-  copyBtn: {
+  actionRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 16,
+  },
+  actionBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 6,
     backgroundColor: Colors.dark.input,
-    paddingVertical: 14,
-    borderRadius: 14,
+    paddingVertical: 13,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: Colors.primary + '50',
-    marginBottom: 12,
+    borderColor: Colors.dark.border,
   },
-  copyBtnText: { color: '#FFF', fontWeight: '600', fontSize: 15 },
+  actionBtnText: { color: '#FFF', fontWeight: '600', fontSize: 13 },
   doneBtn: { borderRadius: 16, overflow: 'hidden' },
   doneBtnGrad: { paddingVertical: 16, alignItems: 'center' },
   doneBtnText: { color: '#FFF', fontWeight: '700', fontSize: 16 },
