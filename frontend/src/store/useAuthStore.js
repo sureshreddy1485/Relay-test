@@ -106,7 +106,7 @@ const useAuthStore = create((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const deviceName = Device.isDevice ? `${Device.osName} ${Device.modelName}` : `${Platform.OS} Simulator`;
-      let deviceId = await AsyncStorage.getItem('relay_device_id');
+      let deviceId = await AsyncStorage.setItem ? await AsyncStorage.getItem('relay_device_id') : null;
       if (!deviceId) {
         deviceId = 'dev_' + Date.now() + '_' + Math.random().toString(36).substring(2);
         await AsyncStorage.setItem('relay_device_id', deviceId);
@@ -117,17 +117,26 @@ const useAuthStore = create((set, get) => ({
       const { data } = await uploadApi.post('/auth/signup', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      await AsyncStorage.setItem('relay_token', data.token);
-      await AsyncStorage.setItem('relay_user', JSON.stringify(data.user));
-      setAuthHeader(data.token);
-      set({ user: data.user, token: data.token, isAuthenticated: true, isLoading: false });
-      await get()._saveAccountToStore(data.user, data.token);
-      return { success: true, recoveryCodes: data.recoveryCodes || [] };
+      set({ isLoading: false });
+      return {
+        success: true,
+        token: data.token,
+        user: data.user,
+        recoveryCodes: data.recoveryCodes || [],
+      };
     } catch (err) {
       const message = err.response?.data?.message || 'Signup failed';
       set({ error: message, isLoading: false });
       return { success: false, message };
     }
+  },
+
+  finalizeSignup: async (user, token) => {
+    await AsyncStorage.setItem('relay_token', token);
+    await AsyncStorage.setItem('relay_user', JSON.stringify(user));
+    setAuthHeader(token);
+    set({ user, token, isAuthenticated: true });
+    await get()._saveAccountToStore(user, token);
   },
 
   login: async (identifier, password) => {

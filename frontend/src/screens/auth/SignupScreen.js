@@ -32,6 +32,7 @@ export default function SignupScreen({ navigation }) {
   const [showCodesModal, setShowCodesModal] = useState(false);
   const [generatedCodes, setGeneratedCodes] = useState([]);
   const [copied, setCopied] = useState(false);
+  const [pendingSession, setPendingSession] = useState(null);
 
   useEffect(() => {
     const show = Keyboard.addListener('keyboardDidShow', (e) => {
@@ -105,9 +106,6 @@ export default function SignupScreen({ navigation }) {
 
     const result = await signup(formData);
     if (result.success) {
-      const user = useAuthStore.getState().user;
-      connectSocket(user._id);
-
       if (saveInfo) {
         try {
           const raw = await AsyncStorage.getItem('relay_saved_logins');
@@ -118,10 +116,17 @@ export default function SignupScreen({ navigation }) {
         } catch (_) {}
       }
 
-      if (result.recoveryCodes && result.recoveryCodes.length > 0) {
-        setGeneratedCodes(result.recoveryCodes);
-        setShowCodesModal(true);
-      }
+      setPendingSession({ user: result.user, token: result.token });
+      setGeneratedCodes(result.recoveryCodes || []);
+      setShowCodesModal(true);
+    }
+  };
+
+  const handleModalDone = async () => {
+    setShowCodesModal(false);
+    if (pendingSession) {
+      connectSocket(pendingSession.user._id);
+      await useAuthStore.getState().finalizeSignup(pendingSession.user, pendingSession.token);
     }
   };
 
@@ -317,7 +322,7 @@ export default function SignupScreen({ navigation }) {
               <Text style={styles.copyBtnText}>{copied ? "Copied All Codes!" : "Copy All Codes"}</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => setShowCodesModal(false)} style={styles.doneBtn} activeOpacity={0.85}>
+            <TouchableOpacity onPress={handleModalDone} style={styles.doneBtn} activeOpacity={0.85}>
               <LinearGradient colors={[Colors.primary, Colors.primaryDark]} style={styles.doneBtnGrad}>
                 <Text style={styles.doneBtnText}>I Have Saved My Codes</Text>
               </LinearGradient>
