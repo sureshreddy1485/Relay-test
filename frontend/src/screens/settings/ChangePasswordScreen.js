@@ -11,22 +11,22 @@ import api from '../../services/api';
 
 export default function ChangePasswordScreen({ navigation }) {
   const insets = useSafeAreaInsets();
-  const [form, setForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '', securityKey: '' });
-  const [show, setShow] = useState({ curr: false, new: false, key: false });
+  const [form, setForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [show, setShow] = useState({ curr: false, new: false });
   const [isLoading, setIsLoading] = useState(false);
 
   const update = (key, val) => setForm(f => ({ ...f, [key]: val }));
   const toggleShow = (key) => setShow(s => ({ ...s, [key]: !s[key] }));
 
   const handleChange = async () => {
-    if (!form.currentPassword || !form.newPassword || !form.securityKey) {
+    if (!form.currentPassword || !form.newPassword) {
       Alert.alert('Error', 'All fields are required'); return;
     }
     if (form.newPassword !== form.confirmPassword) {
       Alert.alert('Error', 'New passwords do not match'); return;
     }
-    if (form.newPassword.length < 6) {
-      Alert.alert('Error', 'New password must be at least 6 characters'); return;
+    if (form.newPassword.length < 8) {
+      Alert.alert('Error', 'New password must be at least 8 characters'); return;
     }
 
     setIsLoading(true);
@@ -34,7 +34,6 @@ export default function ChangePasswordScreen({ navigation }) {
       await api.put('/auth/change-password', {
         currentPassword: form.currentPassword,
         newPassword: form.newPassword,
-        securityKey: form.securityKey,
       });
       Alert.alert('Success', 'Password changed successfully!', [{ text: 'OK', onPress: () => navigation.goBack() }]);
     } catch (e) {
@@ -46,9 +45,8 @@ export default function ChangePasswordScreen({ navigation }) {
 
   const fields = [
     { key: 'currentPassword', label: 'Current Password', showKey: 'curr', placeholder: 'Enter current password' },
-    { key: 'newPassword', label: 'New Password', showKey: 'new', placeholder: 'Minimum 6 characters' },
+    { key: 'newPassword', label: 'New Password', showKey: 'new', placeholder: 'Minimum 8 characters' },
     { key: 'confirmPassword', label: 'Confirm New Password', showKey: 'new', placeholder: 'Re-enter new password' },
-    { key: 'securityKey', label: 'Security Key', showKey: 'key', placeholder: 'Enter your security key', isKey: true },
   ];
 
   return (
@@ -63,44 +61,44 @@ export default function ChangePasswordScreen({ navigation }) {
       </View>
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
         <View style={styles.infoBox}>
-            <Ionicons name="shield-checkmark" size={20} color={Colors.accentGreen} />
-            <Text style={styles.infoText}>Your security key is required to change your password. This ensures only you can modify your account.</Text>
-          </View>
+          <Ionicons name="shield-checkmark" size={20} color={Colors.accentGreen} />
+          <Text style={styles.infoText}>Enter your current password and a new secure password to update your credentials.</Text>
+        </View>
 
-          {fields.map(({ key, label, showKey, placeholder, isKey }) => (
-            <View key={key} style={styles.inputGroup}>
-              <Text style={styles.label}>{label}</Text>
-              <View style={styles.inputWrap}>
-                <Ionicons
-                  name={isKey ? 'shield-outline' : 'lock-closed-outline'}
-                  size={20}
-                  color={isKey ? Colors.accentGreen : Colors.dark.muted}
-                  style={styles.inputIcon}
-                />
-                <TextInput
-                  style={[styles.input, { flex: 1 }]}
-                  value={form[key]}
-                  onChangeText={v => update(key, v)}
-                  placeholder={placeholder}
-                  placeholderTextColor={Colors.dark.muted}
-                  secureTextEntry={!show[showKey]}
-                  autoCapitalize="none"
-                />
-                <TouchableOpacity onPress={() => toggleShow(showKey)}>
-                  <Ionicons name={show[showKey] ? 'eye-off-outline' : 'eye-outline'} size={20} color={Colors.dark.muted} />
-                </TouchableOpacity>
-              </View>
+        {fields.map(({ key, label, showKey, placeholder }) => (
+          <View key={key} style={styles.inputGroup}>
+            <Text style={styles.label}>{label}</Text>
+            <View style={styles.inputWrap}>
+              <Ionicons
+                name="lock-closed-outline"
+                size={20}
+                color={Colors.dark.muted}
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={[styles.input, { flex: 1 }]}
+                value={form[key]}
+                onChangeText={v => update(key, v)}
+                placeholder={placeholder}
+                placeholderTextColor={Colors.dark.muted}
+                secureTextEntry={!show[showKey]}
+                autoCapitalize="none"
+              />
+              <TouchableOpacity onPress={() => toggleShow(showKey)}>
+                <Ionicons name={show[showKey] ? 'eye-off-outline' : 'eye-outline'} size={20} color={Colors.dark.muted} />
+              </TouchableOpacity>
             </View>
-          ))}
+          </View>
+        ))}
 
-          <TouchableOpacity onPress={handleChange} disabled={isLoading} style={{ marginTop: 16 }}>
-            <LinearGradient colors={[Colors.primary, Colors.primaryDark]} style={styles.changeBtn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
-              {isLoading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.changeBtnText}>Change Password</Text>}
-            </LinearGradient>
-          </TouchableOpacity>
-        </ScrollView>
-      </View>
-    );
+        <TouchableOpacity onPress={handleChange} disabled={isLoading} style={{ marginTop: 16 }}>
+          <LinearGradient colors={[Colors.primary, Colors.primaryDark]} style={styles.changeBtn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+            {isLoading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.changeBtnText}>Change Password</Text>}
+          </LinearGradient>
+        </TouchableOpacity>
+      </ScrollView>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({

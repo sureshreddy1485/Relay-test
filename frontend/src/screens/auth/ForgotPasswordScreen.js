@@ -16,10 +16,9 @@ export default function ForgotPasswordScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const [step, setStep] = useState(0);
   const [identifier, setIdentifier] = useState('');
-  const [securityKey, setSecurityKey] = useState('');
+  const [recoveryCode, setRecoveryCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [showKey, setShowKey] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -27,20 +26,20 @@ export default function ForgotPasswordScreen({ navigation }) {
   const handleReset = async () => {
     setError('');
     if (!identifier.trim()) { setError('Enter your email or username'); return; }
-    if (!securityKey.trim()) { setError('Enter your security key'); return; }
-    if (!newPassword.trim() || newPassword.length < 6) { setError('Password must be at least 6 characters'); return; }
+    if (!recoveryCode.trim()) { setError('Enter a recovery code'); return; }
+    if (!newPassword.trim() || newPassword.length < 8) { setError('Password must be at least 8 characters'); return; }
     if (newPassword !== confirmPassword) { setError('Passwords do not match'); return; }
 
     setIsLoading(true);
     try {
       await api.post('/auth/forgot-password', {
         identifier: identifier.trim(),
-        securityKey: securityKey.trim(),
+        recoveryCode: recoveryCode.trim(),
         newPassword,
       });
       setStep(3);
     } catch (err) {
-      setError(err.response?.data?.message || 'Reset failed. Check your security key.');
+      setError(err.response?.data?.message || 'Reset failed. Check your recovery code.');
     } finally {
       setIsLoading(false);
     }
@@ -80,7 +79,7 @@ export default function ForgotPasswordScreen({ navigation }) {
               <Ionicons name="shield-checkmark" size={32} color="#FFF" />
             </LinearGradient>
             <Text style={styles.title}>Reset Password</Text>
-            <Text style={styles.subtitle}>Enter your security key to reset your password</Text>
+            <Text style={styles.subtitle}>Enter a recovery code to reset your password</Text>
           </View>
 
           {error ? (
@@ -94,7 +93,7 @@ export default function ForgotPasswordScreen({ navigation }) {
           <View style={styles.infoBox}>
             <Ionicons name="information-circle-outline" size={20} color={Colors.primary} />
             <Text style={styles.infoText}>
-              You'll need the Security Key you set during registration to reset your password.
+              Enter one of your 8-character recovery codes generated during account creation. Each recovery code can only be used once.
             </Text>
           </View>
 
@@ -114,21 +113,17 @@ export default function ForgotPasswordScreen({ navigation }) {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Security Key</Text>
+            <Text style={styles.label}>One-Time Recovery Code</Text>
             <View style={styles.inputWrap}>
-              <Ionicons name="shield-outline" size={20} color={Colors.accentGreen} style={styles.inputIcon} />
+              <Ionicons name="key-outline" size={20} color={Colors.accentGreen} style={styles.inputIcon} />
               <TextInput
                 style={[styles.input, { flex: 1 }]}
-                placeholder="Enter your security key"
+                placeholder="e.g. A3K9-X7P2"
                 placeholderTextColor={Colors.dark.muted}
-                value={securityKey}
-                onChangeText={setSecurityKey}
-                secureTextEntry={!showKey}
-                autoCapitalize="none"
+                value={recoveryCode}
+                onChangeText={setRecoveryCode}
+                autoCapitalize="characters"
               />
-              <TouchableOpacity onPress={() => setShowKey(!showKey)}>
-                <Ionicons name={showKey ? 'eye-off-outline' : 'eye-outline'} size={20} color={Colors.dark.muted} />
-              </TouchableOpacity>
             </View>
           </View>
 

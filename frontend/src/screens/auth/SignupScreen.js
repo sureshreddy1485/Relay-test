@@ -3,11 +3,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator,
-  StatusBar, Image, Alert, Keyboard, Dimensions,
+  StatusBar, Image, Alert, Keyboard, Dimensions, Modal,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import * as Clipboard from 'expo-clipboard';
 import useAuthStore from '../../store/useAuthStore';
 import { Colors } from '../../theme/colors';
 import { connectSocket } from '../../services/socketService';
@@ -16,18 +17,22 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export default function SignupScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const [form, setForm] = useState({
-    username: '', email: '', displayName: '', password: '', confirmPassword: '', securityKey: '',
+    username: '', email: '', displayName: '', password: '', confirmPassword: '',
   });
   const [showPass, setShowPass] = useState(false);
-  const [showKey, setShowKey] = useState(false);
   const [avatar, setAvatar] = useState(null);
   const [saveInfo, setSaveInfo] = useState(true);
   const { signup, isLoading, error, clearError } = useAuthStore();
   const scrollRef = useRef();
-  const fieldYRef = useRef({});     // Y position of each field in the scroll view
-  const fieldHeightRef = useRef({}); // Height of each field
+  const fieldYRef = useRef({});
+  const fieldHeightRef = useRef({});
   const keyboardHeightRef = useRef(0);
   const screenHeight = Dimensions.get('window').height;
+
+  // Recovery Codes Modal state
+  const [showCodesModal, setShowCodesModal] = useState(false);
+  const [generatedCodes, setGeneratedCodes] = useState([]);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const show = Keyboard.addListener('keyboardDidShow', (e) => {
@@ -42,9 +47,8 @@ export default function SignupScreen({ navigation }) {
   const scrollToField = (key) => {
     const y = fieldYRef.current[key];
     const h = fieldHeightRef.current[key] || 56;
-    const kbH = keyboardHeightRef.current || 300; // fallback estimate
+    const kbH = keyboardHeightRef.current || 300;
     if (y !== undefined) {
-      // Scroll so the bottom of the field sits ~16px above the keyboard
       const visibleHeight = screenHeight - kbH;
       const targetY = y + h - visibleHeight + 32;
       scrollRef.current?.scrollTo({ y: Math.max(0, targetY), animated: true });
@@ -65,8 +69,8 @@ export default function SignupScreen({ navigation }) {
 
   const handleSignup = async () => {
     clearError();
-    const { username, email, password, confirmPassword, securityKey, displayName } = form;
-    if (!username || !email || !password || !securityKey) {
+    const { username, email, password, confirmPassword, displayName } = form;
+    if (!username || !email || !password) {
       Alert.alert('Error', 'All fields are required'); return;
     }
     if (username.length < 6 || username.length > 16) {
@@ -90,13 +94,11 @@ export default function SignupScreen({ navigation }) {
     if (!passwordRegex.test(password)) {
       Alert.alert('Error', 'Password must contain at least one uppercase letter, one number, and one special character'); return;
     }
-    if (securityKey.length < 6) { Alert.alert('Error', 'Security key must be at least 6 characters'); return; }
 
     const formData = new FormData();
     formData.append('username', username.toLowerCase().trim());
     formData.append('email', email.toLowerCase().trim());
     formData.append('password', password);
-    formData.append('securityKey', securityKey);
     formData.append('displayName', displayName || username);
     if (avatar) {
       formData.append('profilePicture', { uri: avatar.uri, name: 'profile.jpg', type: 'image/jpeg' });
@@ -107,18 +109,31 @@ export default function SignupScreen({ navigation }) {
       const user = useAuthStore.getState().user;
       connectSocket(user._id);
 
-      // Save credentials locally if user opted in
       if (saveInfo) {
         try {
           const raw = await AsyncStorage.getItem('relay_saved_logins');
           let accounts = raw ? JSON.parse(raw) : [];
-          // Remove existing entry for same username
           accounts = accounts.filter(a => a.username !== username.toLowerCase().trim());
-          // Prepend new entry; cap at 3
           accounts = [{ username: username.toLowerCase().trim(), email: email.toLowerCase().trim(), password }, ...accounts].slice(0, 3);
           await AsyncStorage.setItem('relay_saved_logins', JSON.stringify(accounts));
         } catch (_) {}
       }
+
+      if (result.recoveryCodes && result.recoveryCodes.length > 0) {
+        setGeneratedCodes(result.recoveryCodes);
+        setShowCodesModal(true);
+      }
+    }
+  };
+
+  const copyCodes = async () => {
+    try {
+      const textToCopy = `Relay Recovery Codes:\n\n` + generatedCodes.join('\n');
+      await Clipboard.setStringAsync(textToCopy);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
+    } catch (e) {
+      Alert.alert('Copied', generatedCodes.join('\n'));
     }
   };
 
@@ -131,7 +146,7 @@ export default function SignupScreen({ navigation }) {
           contentContainerStyle={[
             styles.scroll, 
             { 
-            paddingTop: 20, 
+              paddingTop: 20, 
               paddingBottom: 120,
               paddingLeft: Math.max(insets.left, 24),
               paddingRight: Math.max(insets.right, 24)
@@ -233,30 +248,6 @@ export default function SignupScreen({ navigation }) {
             </View>
           </View>
 
-          {/* Security Key */}
-          <View style={styles.inputGroup}
-            onLayout={(e) => { fieldYRef.current['securityKey'] = e.nativeEvent.layout.y; fieldHeightRef.current['securityKey'] = e.nativeEvent.layout.height; }}
-          >
-            <Text style={styles.label}>Security Key</Text>
-            <Text style={styles.hint}>🔐 Required for password recovery. Store it safely!</Text>
-            <View style={styles.inputWrap}>
-              <Ionicons name="shield-checkmark-outline" size={20} color={Colors.accentGreen} style={styles.inputIcon} />
-              <TextInput
-                style={[styles.input, { flex: 1 }]}
-                placeholder="Create a secret security key"
-                placeholderTextColor={Colors.dark.muted}
-                value={form.securityKey}
-                onChangeText={v => update('securityKey', v)}
-                secureTextEntry={!showKey}
-                autoCapitalize="none"
-                onFocus={() => scrollToField('securityKey')}
-              />
-              <TouchableOpacity onPress={() => setShowKey(!showKey)}>
-                <Ionicons name={showKey ? 'eye-off-outline' : 'eye-outline'} size={20} color={Colors.dark.muted} />
-              </TouchableOpacity>
-            </View>
-          </View>
-
           {/* Save Info toggle */}
           <TouchableOpacity
             onPress={() => setSaveInfo(v => !v)}
@@ -286,6 +277,41 @@ export default function SignupScreen({ navigation }) {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Recovery Codes Modal */}
+      <Modal visible={showCodesModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <Ionicons name="shield-checkmark" size={32} color={Colors.accentGreen} />
+              <Text style={styles.modalTitle}>Save Recovery Codes</Text>
+              <Text style={styles.modalSubtitle}>
+                Save these 8 one-time recovery codes in a safe place. If you forget your password, you can use any code once to reset it.
+              </Text>
+            </View>
+
+            <View style={styles.codesGrid}>
+              {generatedCodes.map((code, idx) => (
+                <View key={idx} style={styles.codeBadge}>
+                  <Text style={styles.codeIndex}>{idx + 1}.</Text>
+                  <Text style={styles.codeText}>{code}</Text>
+                </View>
+              ))}
+            </View>
+
+            <TouchableOpacity onPress={copyCodes} style={styles.copyBtn} activeOpacity={0.8}>
+              <Ionicons name={copied ? "checkmark-circle" : "copy-outline"} size={20} color="#FFF" />
+              <Text style={styles.copyBtnText}>{copied ? "Copied All Codes!" : "Copy All Codes"}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={() => setShowCodesModal(false)} style={styles.doneBtn} activeOpacity={0.85}>
+              <LinearGradient colors={[Colors.primary, Colors.primaryDark]} style={styles.doneBtnGrad}>
+                <Text style={styles.doneBtnText}>I Have Saved My Codes</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </LinearGradient>
   );
 }
@@ -338,4 +364,57 @@ const styles = StyleSheet.create({
   checkboxActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
   saveInfoLabel: { color: Colors.dark.text, fontSize: 14, fontWeight: '600', marginBottom: 2 },
   saveInfoHint: { color: Colors.dark.muted, fontSize: 12 },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+  modalCard: {
+    backgroundColor: Colors.dark.card,
+    borderRadius: 24,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+  },
+  modalHeader: { alignItems: 'center', marginBottom: 20 },
+  modalTitle: { fontSize: 22, fontWeight: '800', color: '#FFF', marginTop: 10, marginBottom: 6 },
+  modalSubtitle: { fontSize: 13, color: Colors.dark.textSecondary, textAlign: 'center', lineHeight: 18 },
+  codesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 10,
+    marginBottom: 20,
+  },
+  codeBadge: {
+    width: '48%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.dark.input,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+  },
+  codeIndex: { color: Colors.dark.muted, fontSize: 12, marginRight: 6, fontWeight: '600' },
+  codeText: { color: Colors.accentGreen, fontSize: 14, fontWeight: '700', letterSpacing: 0.5 },
+  copyBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: Colors.dark.input,
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.primary + '50',
+    marginBottom: 12,
+  },
+  copyBtnText: { color: '#FFF', fontWeight: '600', fontSize: 15 },
+  doneBtn: { borderRadius: 16, overflow: 'hidden' },
+  doneBtnGrad: { paddingVertical: 16, alignItems: 'center' },
+  doneBtnText: { color: '#FFF', fontWeight: '700', fontSize: 16 },
 });
