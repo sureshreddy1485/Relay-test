@@ -367,9 +367,4 @@ const logoutDevice = asyncHandler(async (req, res) => {
   res.status(200).json({ success: true, message: 'Device logged out' });
 });
 
-  user.devices = user.devices.filter(d => d.deviceId !== deviceId);
-  await user.save();
-  res.status(200).json({ success: true, message: 'Device logged out' });
-});
-
 module.exports = { signup, login, forgotPassword, changePassword, getMe, logout, getDevices, logoutDevice };
