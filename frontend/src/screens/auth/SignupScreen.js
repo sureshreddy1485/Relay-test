@@ -8,7 +8,6 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import * as Clipboard from 'expo-clipboard';
 import useAuthStore from '../../store/useAuthStore';
 import { Colors } from '../../theme/colors';
 import { connectSocket } from '../../services/socketService';
@@ -127,14 +126,28 @@ export default function SignupScreen({ navigation }) {
   };
 
   const copyCodes = async () => {
+    const textToCopy = `Relay Recovery Codes:\n\n` + generatedCodes.join('\n');
     try {
-      const textToCopy = `Relay Recovery Codes:\n\n` + generatedCodes.join('\n');
-      await Clipboard.setStringAsync(textToCopy);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 3000);
-    } catch (e) {
-      Alert.alert('Copied', generatedCodes.join('\n'));
-    }
+      const ExpoClipboard = require('expo-clipboard');
+      if (ExpoClipboard && typeof ExpoClipboard.setStringAsync === 'function') {
+        await ExpoClipboard.setStringAsync(textToCopy);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 3000);
+        return;
+      }
+    } catch (_) {}
+
+    try {
+      const { Clipboard } = require('react-native');
+      if (Clipboard && typeof Clipboard.setString === 'function') {
+        Clipboard.setString(textToCopy);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 3000);
+        return;
+      }
+    } catch (_) {}
+
+    Alert.alert('Your Recovery Codes', generatedCodes.join('\n'));
   };
 
   return (
