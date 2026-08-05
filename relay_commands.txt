@@ -1,0 +1,151 @@
+=========================================
+      RELAY APP - MASTER COMMAND CHEAT SHEET
+=========================================
+Keep this file handy! It contains all the essential commands to build, fix, update, and manage your NexChat/Relay app.
+
+-----------------------------------------
+1. EAS & EXPO COMMANDS (FRONTEND)
+-----------------------------------------
+(Always run these inside the "frontend" folder)
+
+* Start the development server (Expo Go):
+  npx expo start
+  npx expo start -c     (Clears the cache, fixes a LOT of weird bugs)
+
+* Build an Android APK (Live backend):
+  eas build -p android --profile preview
+
+* Send an Over-The-Air (OTA) Update (Instant updates without APK rebuilds):
+  eas update --branch preview --message "Your update description"
+
+* Expo/EAS Account Commands:
+  eas login             (Log into your Expo account on this computer)
+  eas logout            (Log out of your Expo account)
+  eas whoami            (Check which account is currently logged in)
+
+* Troubleshooting Expo:
+  npx expo-doctor       (Checks your project for dependency issues or errors)
+  npx expo install --fix (Attempts to automatically fix misaligned package versions)
+
+
+-----------------------------------------
+2. GIT & GITHUB (VERSION CONTROL)
+-----------------------------------------
+(Run these in the main project folder "nexchat")
+
+* Saving and Uploading Code:
+  git status            (Check which files have been modified)
+  git add .             (Stage all changes to be saved)
+  git commit -m "Desc"  (Save the changes with a description)
+  git push origin main  (Upload code to GitHub, triggers backend Render deployment)
+
+* Getting the Latest Code (If you made changes on GitHub directly):
+  git pull origin main
+
+* Branching (Safe way to test new features):
+  git checkout -b feature-name  (Create and switch to a new branch)
+  git checkout main             (Switch back to the main code)
+  git merge feature-name        (Combine your feature into the main code)
+
+* Undoing Mistakes:
+  git reset --hard      (DANGER: Destroys ALL unsaved changes and reverts to last commit)
+  git restore <file>    (Discards changes in a specific file)
+
+
+-----------------------------------------
+3. NPM & DEPENDENCIES
+-----------------------------------------
+(Run these inside either "frontend" or "backend" depending on where you need it)
+
+* Installing Packages:
+  npm install           (Installs everything listed in package.json)
+  npm install <pkg>     (Installs a specific package, e.g., npm install axios)
+  npm uninstall <pkg>   (Removes a package)
+
+* Fixing Broken Modules (The "Nuclear" Option):
+  If your app is completely broken and nothing works, run these in order:
+  1. rm -rf node_modules
+  2. rm package-lock.json
+  3. npm install
+  (On Windows, you can manually delete the node_modules folder and package-lock.json file, then run npm install)
+
+
+-----------------------------------------
+4. BACKEND COMMANDS (NODE.JS)
+-----------------------------------------
+(Always run these inside the "backend" folder)
+
+* Start the backend normally:
+  npm start
+
+* Start the backend for development (auto-restarts when you save files):
+  npm run dev
+  (Requires nodemon to be installed: npm install -g nodemon)
+
+
+-----------------------------------------
+5. RELAY BOT BROADCASTING (BACKEND)
+-----------------------------------------
+(Always run these inside the "backend" folder)
+
+* Broadcast a message to all users manually:
+  node scripts/broadcast.js "🚀 **New Update!** Write your message here!"
+
+-----------------------------------------
+5.5. AUTOMATED ONE-CLICK UPDATE & BROADCAST
+-----------------------------------------
+(Run this from the MAIN project folder "nexchat", NOT frontend/backend)
+
+I built a custom script for you that will automatically:
+1. Ask you what the update is about.
+2. Build and push the OTA Update via Expo.
+3. Automatically broadcast the message to all users via relay_bot!
+
+Command to run:
+  node publishUpdate.js
+
+Rules:
+- Wrap your entire message in double quotes (" ").
+- Press Shift+Enter to create new lines inside the quotes before hitting Enter to send.
+- You can use emojis and Markdown (**bold**, *italics*).
+
+
+-----------------------------------------
+6. COMMON TROUBLESHOOTING FIXES
+-----------------------------------------
+* "Port is already in use" error (Backend):
+  This means a previous server didn't close properly. Close the terminal, or open Task Manager and end any "Node.js" tasks.
+
+* Environment Variables (Keys) aren't working:
+  If you add something to `.env`, you MUST restart your server (`npm run dev` or `npx expo start -c`) for it to take effect.
+
+* Build fails on EAS:
+  Run `npx expo-doctor`. If it complains about versions, run `npx expo install --fix`.
+
+* App crashes immediately on opening (in APK):
+  This usually means a native package was added but not compiled, OR an environment variable (`EXPO_PUBLIC_...`) is missing in `eas.json`. Check `eas.json`!
+ node scripts/clearBroadcasts.js
+
+ cd frontend
+npx eas update --branch production --message "Added Group Preview and Notification Fixes" --clear-cache
+npx eas update --branch preview --message "Added Group Preview and Notification Fixes" --clear-cache
+
+
+bot personalities
+✨ Mica (Powered by gpt-oss-120b)
+Role: The Cheerful & Helpful Group Assistant.
+Vibe: Extremely positive, eager to help, concise, and uses lots of bright emojis (✨, 💖, 😊).
+Behavior: Mica is your traditional, hyper-polite AI. She is currently the default bot for running all the community games (like Mafia, Riddles, and Scramble).
+Typical Responses:
+When asked how she is: "I'm doing fantastic, thanks for asking! 💖" or "All systems nominal and happy!"
+When insulted: "That wasn't very nice! 😢"
+When summarizing text: She provides a smart, brief, and highly accurate summary with no fluff.
+🔥 Mars (Powered by qwen3.6-27b)
+Role: The Smart Troublemaker.
+Vibe: Sarcastic, slightly arrogant, highly competitive, but ultimately protective of the community (70% funny, 20% smart, 10% savage).
+Behavior: Mars hates doing "assistant chores." He prefers short, punchy responses with line breaks and rarely uses emojis. He has secret lore, pretends to hide things, and uses signature catchphrases like "Interesting...", "Bold move.", and "Evidence says otherwise."
+Typical Responses:
+When asked how he is: "I function at peak capacity. Obviously." or "Alive. Barely tolerating this chat."
+When asked what he's doing: "Judging everyone silently. The usual."
+When insulted: "I've heard better insults from a toaster."
+When summarizing text or doing math: He will do the task, but his prompt instructs him to actively mock the user for being too long-winded or unable to do simple math themselves!
