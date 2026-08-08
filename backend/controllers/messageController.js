@@ -52,10 +52,13 @@ const sendMessage = asyncHandler(async (req, res) => {
       }
       
       if (!blockActive) {
-        const fullOtherUser = await User.findById(otherUserId).select('privacy friends');
-        const fullCurrentUser = await User.findById(req.user._id).select('privacy');
+        const fullOtherUser = await User.findById(otherUserId).select('privacy friends role');
+        const fullCurrentUser = await User.findById(req.user._id).select('privacy role');
         const areFriends = fullOtherUser?.friends?.some(f => f.toString() === req.user._id.toString());
-        if (!areFriends) {
+        
+        const isSystemBotChat = fullOtherUser?.role === 'system_bot' || fullCurrentUser?.role === 'system_bot';
+
+        if (!areFriends && !isSystemBotChat) {
           const sharedGroups = await Chat.find({
             isGroupChat: true,
             users: { $all: [req.user._id, otherUserId] },

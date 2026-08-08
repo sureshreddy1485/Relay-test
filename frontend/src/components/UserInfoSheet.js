@@ -431,6 +431,14 @@ export default function UserInfoSheet({ visible, user: initialUser, chat, curren
                 <>
                   <ActionRow icon="information-circle-outline" label="System Assistant" onPress={() => {}} />
                   <View style={styles.divider} />
+                  <ActionRow
+                    icon="time-outline"
+                    label="Disappearing Messages"
+                    value={secondsToLabel(disappear)}
+                    valueStyle={{ color: Colors.primary, fontSize: 13 }}
+                    onPress={() => setShowDisappear(true)}
+                  />
+                  <View style={styles.divider} />
                   <ActionRow icon="shield-checkmark-outline" label="Managed by Relay" iconColor={Colors.primary} labelStyle={{ color: Colors.primary }} onPress={() => {}} />
                 </>
               )}

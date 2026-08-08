@@ -6,6 +6,7 @@ import {
   StatusBar, Animated, Image, Switch
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import useAuthStore from '../../store/useAuthStore';
@@ -22,6 +23,12 @@ export default function LoginScreen({ navigation }) {
   const { login, isLoading, error, clearError } = useAuthStore();
   const shakeAnim = useRef(new Animated.Value(0)).current;
   const scrollRef = useRef();
+
+  useFocusEffect(
+    React.useCallback(() => {
+      clearError();
+    }, [clearError])
+  );
 
   React.useEffect(() => {
     const loadSavedCredentials = async () => {

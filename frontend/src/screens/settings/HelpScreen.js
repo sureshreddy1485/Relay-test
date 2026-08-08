@@ -1,25 +1,101 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../../theme/colors';
-
 import { LinearGradient } from 'expo-linear-gradient';
 
-const HelpSection = ({ icon, title, description, color }) => (
-  <View style={styles.sectionCard}>
-    <View style={styles.sectionHeader}>
-      <LinearGradient colors={[color, color + '80']} style={styles.iconWrap}>
-        <Ionicons name={icon} size={20} color="#FFF" />
-      </LinearGradient>
-      <Text style={styles.sectionTitle}>{title}</Text>
-    </View>
-    <Text style={styles.sectionDesc}>{description}</Text>
-  </View>
-);
+const HelpSection = ({ id, icon, title, description, color, expandedId, setExpandedId }) => {
+  const isExpanded = expandedId === id;
+
+  const toggleExpand = () => {
+    if (isExpanded) {
+      setExpandedId(null);
+    } else {
+      setExpandedId(id);
+    }
+  };
+
+  return (
+    <TouchableOpacity activeOpacity={0.7} onPress={toggleExpand} style={[styles.sectionCard, isExpanded && styles.sectionCardExpanded]}>
+      <View style={styles.sectionHeader}>
+        <LinearGradient colors={[color, color + '80']} style={styles.iconWrap}>
+          <Ionicons name={icon} size={20} color="#FFF" />
+        </LinearGradient>
+        <Text style={styles.sectionTitle}>{title}</Text>
+        <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={20} color={Colors.dark.muted} />
+      </View>
+      {isExpanded && (
+        <View style={styles.expandedContent}>
+          <Text style={styles.sectionDesc}>{description}</Text>
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+};
 
 export default function HelpScreen({ navigation }) {
   const insets = useSafeAreaInsets();
+  const [expandedId, setExpandedId] = useState(null);
+
+  const sections = [
+    {
+      id: 'chatting',
+      icon: 'chatbubbles',
+      title: '1. Chatting & Media',
+      color: '#3B82F6',
+      description: 'Relay offers a lightning-fast messaging experience. You can send text messages, voice notes, high-quality photos, and files instantly.\n\n• Mistakes happen! You have exactly 15 minutes to edit any text message after sending it.\n• Tap the "+" icon next to the chat bar to explore rich media options, including View Once images, Documents, and Polls.\n• Long-press any message to react with emojis or reply directly to it.'
+    },
+    {
+      id: 'disappearing',
+      icon: 'timer',
+      title: '2. Disappearing Messages',
+      color: '#EC4899',
+      description: 'Privacy is our top priority. You have full control over how long your messages exist.\n\n• View Once Media: Send a photo or video using the "+" menu and select "View Once". It will instantly self-destruct the moment the recipient closes it.\n• Auto-Deleting Chats: Open any chat\'s settings to enable Disappearing Messages. You can set a timer (like 24 hours or 7 days) and all messages sent in that chat will automatically vanish once the time is up.'
+    },
+    {
+      id: 'groups',
+      icon: 'people',
+      title: '3. Communities & Groups',
+      color: '#10B981',
+      description: 'Build your own community by creating a Group Chat. You can add your friends, assign admins, and share moments together.\n\n• Group Tags: Every group gets a unique Group Tag. Others can search for this tag in the Communities tab to join instantly.\n• Auto-Accept: Want a public community? Turn on "Auto-Accept Requests" in group settings, and anyone with the tag can join without waiting for admin approval.'
+    },
+    {
+      id: 'moments',
+      icon: 'aperture',
+      title: '4. Moments (Stories)',
+      color: '#F43F5E',
+      description: 'Moments allow you to share your day with your friends. Post a photo, video, or a text update to your Moments.\n\n• Your Moments will automatically disappear after 24 hours.\n• Only your friends can view your Moments, and you can always check the viewer list to see exactly who watched them.'
+    },
+    {
+      id: 'bots',
+      icon: 'planet',
+      title: '5. Meet the Bots: Mica & Mars',
+      color: '#8B5CF6',
+      description: 'Relay comes with two built-in AI companions that can be added to any group chat!\n\n• Mica: Your friendly, helpful, and polite AI assistant.\n• Mars: Your sarcastic, witty, and slightly rebellious AI companion.\n\nBot Commands:\n• !swap : Group admins can type this to instantly switch between Mica and Mars.\n• !help : Type this when Mica is active to get a full guide on what she can do.\n• Ask them anything! Just type their name or reply to their messages to start a conversation.'
+    },
+    {
+      id: 'games',
+      icon: 'game-controller',
+      title: '6. Play Games',
+      color: '#F59E0B',
+      description: 'Bored? Relay brings multiplayer games directly into your group chats!\n\nJust type "!scramble" in any group chat where a bot is active. The bot will manage the game and explain all the rules. Race against your friends and climb the Global Leaderboard!'
+    },
+    {
+      id: 'privacy',
+      icon: 'shield-checkmark',
+      title: '7. Privacy & Security',
+      color: '#EAB308',
+      description: 'You are in complete control of your data. Navigate to Settings > Privacy to fine-tune your account.\n\n• You can hide your Last Seen, Profile Picture, and Read Receipts.\n• You can silently remove friends without them being notified.\n• Need a break? You can safely deactivate your account and return whenever you are ready.'
+    },
+    {
+      id: 'notifications',
+      icon: 'notifications',
+      title: '8. Smart Notifications',
+      color: '#06B6D4',
+      description: 'Our native background engine ensures you never miss a beat.\n\n• Even if Relay is completely closed, you will still receive notifications securely and instantly.\n• You can quick-reply to messages or mark them as read directly from your phone\'s notification panel or lock screen.'
+    }
+  ];
 
   return (
     <View style={styles.container}>
@@ -36,78 +112,23 @@ export default function HelpScreen({ navigation }) {
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <Text style={styles.welcomeText}>Welcome to Relay!</Text>
         <Text style={styles.subtitleText}>
-          Relay is a beautiful, feature-rich messaging app designed for speed, privacy, and fun. Below is your complete guide to mastering the app.
+          Relay is a beautiful, feature-rich messaging app designed for speed, privacy, and fun. Click on any section below to learn more.
         </Text>
 
-        <HelpSection 
-          icon="chatbubbles"
-          title="1. Chatting & Media"
-          color="#3B82F6"
-          description="Send text, voice notes, photos, and videos instantly. You can react to messages, reply to them, or edit your text messages within 15 minutes of sending. Check out the '+' button to send disappearing 'View Once' media, polls, or documents."
-        />
-
-        <HelpSection 
-          icon="timer"
-          title="2. Disappearing Messages"
-          color="#EC4899"
-          description="Privacy first! You can enable disappearing messages in any chat. Messages will automatically self-destruct after the set time limit. We also support 'View Once' images and videos that disappear the moment they are closed."
-        />
-
-        <HelpSection 
-          icon="people"
-          title="3. Communities & Groups"
-          color="#10B981"
-          description="Create groups, invite friends, and communicate seamlessly. You can make groups Public to list them in the Communities tab. Use 'Auto-Accept Requests' in your group settings to automatically approve new members!"
-        />
-
-        <HelpSection 
-          icon="aperture"
-          title="4. Moments (Stories)"
-          color="#F43F5E"
-          description="Share 24-hour disappearing Moments with your friends! Post photos, text, or videos to your friends, and see who viewed your Moments. It's the best way to share what you're up to!"
-        />
-
-        <HelpSection 
-          icon="people-circle"
-          title="5. Multi-Account Manager"
-          color="#6366F1"
-          description="Got multiple identities? Tap your profile picture on the top right of the Chats screen to open the Account Manager. Add another account and instantly switch between them without logging out!"
-        />
-
-        <HelpSection 
-          icon="planet"
-          title="6. Meet the Bots: Mica & Mars"
-          color="#8B5CF6"
-          description="Relay features two incredibly smart AI companions. Mica is friendly and helpful. Mars is sarcastic and a bit of a rebel. In any group chat, the admin can swap the active bot by typing !swap."
-        />
-
-        <HelpSection 
-          icon="game-controller"
-          title="7. Play Games (Scramble)"
-          color="#F59E0B"
-          description="Bored? Type '!scramble' in any group chat with Mica or Mars active! The bot will jumble a word, and everyone in the group can race to guess it. Your scores are tracked on the global leaderboard!"
-        />
-
-        <HelpSection 
-          icon="shield-checkmark"
-          title="8. Privacy & Security"
-          color="#EAB308"
-          description="Go to Settings to control who sees your Last Seen, Profile Picture, and Read Receipts. You can also silently remove friends, or temporarily deactivate your account if you need a break."
-        />
-
-        <HelpSection 
-          icon="notifications"
-          title="9. Smart Notifications"
-          color="#06B6D4"
-          description="Relay uses native background notifications. Even if the app is completely closed, you will receive notifications securely. Reply or mark messages as read directly from your phone's notification panel."
-        />
+        {sections.map(sec => (
+          <HelpSection 
+            key={sec.id}
+            {...sec}
+            expandedId={expandedId}
+            setExpandedId={setExpandedId}
+          />
+        ))}
 
         <View style={styles.footer}>
           <Ionicons name="heart" size={32} color="#EF4444" style={{ marginBottom: 8 }} />
           <Text style={styles.footerText}>Made with love</Text>
           <Text style={styles.versionText}>Relay Version 1.0.0</Text>
         </View>
-
       </ScrollView>
     </View>
   );
@@ -160,10 +181,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.dark.border,
   },
+  sectionCardExpanded: {
+    borderColor: Colors.primary + '80',
+    backgroundColor: Colors.dark.card,
+  },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+  },
+  expandedContent: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: Colors.dark.border,
   },
   iconWrap: {
     width: 36,
@@ -175,12 +205,12 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     color: '#FFF',
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
     flex: 1,
   },
   sectionDesc: {
-    color: '#A1A1AA',
+    color: '#D4D4D8',
     fontSize: 14,
     lineHeight: 22,
   },

@@ -248,6 +248,32 @@ export default function ChatRoomScreen({ route, navigation }) {
   const [recording, setRecording] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
+
+  const [showHelpModal, setShowHelpModal] = useState(false);
+  const [helpCategory, setHelpCategory] = useState(null);
+  const [helpText, setHelpText] = useState('');
+  const [isSendingHelp, setIsSendingHelp] = useState(false);
+  const sendHelpMessage = async () => {
+    if (!helpCategory || !helpText.trim()) return;
+    try {
+      setIsSendingHelp(true);
+      const formattedContent = `${helpCategory}\n\n${helpText.trim()}`;
+      const { data } = await api.post('/messages', {
+        chatId: chat._id,
+        content: formattedContent,
+        messageType: 'text'
+      });
+      useChatStore.getState().addMessageToChat(chat._id, data.message);
+      setShowHelpModal(false);
+      setHelpCategory(null);
+      setHelpText('');
+      showAlert('Success', 'Your message has been sent to Relay Support.');
+    } catch (e) {
+      showAlert('Error', e.response?.data?.message || e.message);
+    } finally {
+      setIsSendingHelp(false);
+    }
+  };
   const [showGifModal, setShowGifModal] = useState(false);
   const [gifQuery, setGifQuery] = useState('');
   const [gifResults, setGifResults] = useState([]);
@@ -1311,9 +1337,15 @@ export default function ChatRoomScreen({ route, navigation }) {
 
         {/* Input bar — paddingBottom includes gesture nav inset */}
         {isRelayBotChat ? (
-          <View style={[styles.restrictedBar, { paddingBottom: (insets.bottom || 8) + 12 }]}>
-            <Ionicons name="lock-closed" size={16} color={Colors.dark.muted} style={{ marginRight: 6 }} />
-            <Text style={styles.restrictedText}>Messages are restricted for this chat.</Text>
+          <View style={[styles.restrictedBar, { paddingBottom: (insets.bottom || 8) + 12, justifyContent: 'space-between', paddingHorizontal: 20 }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Ionicons name="lock-closed" size={16} color={Colors.dark.muted} style={{ marginRight: 6 }} />
+              <Text style={styles.restrictedText}>Messages restricted.</Text>
+            </View>
+            <TouchableOpacity onPress={() => setShowHelpModal(true)} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.primary + '20', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }}>
+              <Ionicons name="help-circle-outline" size={18} color={Colors.primary} style={{ marginRight: 4 }} />
+              <Text style={{ color: Colors.primary, fontWeight: 'bold' }}>Help</Text>
+            </TouchableOpacity>
           </View>
         ) : (
           <View style={[styles.inputBar, { paddingBottom: (insets.bottom || 8) + 6 }]}>
@@ -1407,6 +1439,75 @@ export default function ChatRoomScreen({ route, navigation }) {
         navigation={navigation}
         onClose={() => setSelectedUser(null)}
       />
+
+      {/* Help / Support Modal for Relay Bot */}
+      <Modal visible={showHelpModal} transparent animationType="fade" onRequestClose={() => setShowHelpModal(false)}>
+        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          <View style={styles.helpModalContent}>
+            <View style={styles.gifModalHeader}>
+              <Text style={styles.gifModalTitle}>Help & Support</Text>
+              <TouchableOpacity onPress={() => { setShowHelpModal(false); setHelpCategory(null); setHelpText(''); }} style={styles.gifCloseBtn}>
+                <Ionicons name="close" size={20} color={Colors.dark.text} />
+              </TouchableOpacity>
+            </View>
+            
+            {!helpCategory ? (
+              <>
+                <Text style={{ color: Colors.dark.muted, marginBottom: 16 }}>Please select a category:</Text>
+                {[
+                  { label: '🐛 Bug Report' },
+                  { label: '💡 Suggestion' },
+                  { label: '❓ Question' },
+                  { label: '💬 General Feedback' }
+                ].map((item, idx) => (
+                  <TouchableOpacity key={idx} style={styles.forwardChatOption} onPress={() => setHelpCategory(item.label)}>
+                    <Text style={styles.forwardChatText}>{item.label}</Text>
+                    <Ionicons name="chevron-forward" size={16} color={Colors.dark.muted} />
+                  </TouchableOpacity>
+                ))}
+              </>
+            ) : (
+              <>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+                  <TouchableOpacity onPress={() => setHelpCategory(null)} style={{ marginRight: 8 }}>
+                    <Ionicons name="arrow-back" size={20} color={Colors.primary} />
+                  </TouchableOpacity>
+                  <Text style={{ color: Colors.primary, fontWeight: 'bold' }}>{helpCategory}</Text>
+                </View>
+                <TextInput
+                  style={{
+                    backgroundColor: Colors.dark.bg,
+                    color: Colors.dark.text,
+                    fontSize: 15,
+                    borderRadius: 12,
+                    padding: 12,
+                    minHeight: 120,
+                    textAlignVertical: 'top'
+                  }}
+                  placeholder="Please describe your issue..."
+                  placeholderTextColor={Colors.dark.muted}
+                  value={helpText}
+                  onChangeText={setHelpText}
+                  multiline
+                  autoFocus
+                />
+                <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 16 }}>
+                  <TouchableOpacity style={[styles.forwardSendBtn, { backgroundColor: 'transparent', marginRight: 12, borderWidth: 1, borderColor: Colors.dark.border, paddingHorizontal: 20, paddingVertical: 10, marginTop: 0 }]} onPress={() => setShowHelpModal(false)}>
+                    <Text style={{ color: Colors.dark.text, fontWeight: 'bold' }}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={[styles.forwardSendBtn, { opacity: (!helpText.trim() || isSendingHelp) ? 0.5 : 1, paddingHorizontal: 24, paddingVertical: 10, marginTop: 0 }]} 
+                    onPress={sendHelpMessage} 
+                    disabled={!helpText.trim() || isSendingHelp}
+                  >
+                    {isSendingHelp ? <ActivityIndicator size="small" color="#FFF" /> : <Text style={styles.forwardSendBtnText}>Send</Text>}
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
 
       {/* Disappearing messages sheet */}
       <DisappearingMsgSheet
@@ -2271,5 +2372,15 @@ const styles = StyleSheet.create({
     color: Colors.dark.muted,
     fontSize: 14,
     fontWeight: '500',
+  },
+  helpModalContent: {
+    width: '100%',
+    maxWidth: 340,
+    backgroundColor: Colors.dark.card,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+    padding: 20,
+    alignItems: 'stretch',
   }
 });

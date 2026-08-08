@@ -12,6 +12,7 @@ import useAuthStore from '../../store/useAuthStore';
 import { Colors } from '../../theme/colors';
 import { connectSocket } from '../../services/socketService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
 
 export default function SignupScreen({ navigation }) {
   const insets = useSafeAreaInsets();
@@ -34,6 +35,12 @@ export default function SignupScreen({ navigation }) {
   const [copied, setCopied] = useState(false);
   const [pendingSession, setPendingSession] = useState(null);
   const [understandChecked, setUnderstandChecked] = useState(false);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      clearError();
+    }, [clearError])
+  );
 
   useEffect(() => {
     const show = Keyboard.addListener('keyboardDidShow', (e) => {
@@ -386,70 +393,72 @@ export default function SignupScreen({ navigation }) {
       {/* Recovery Codes Modal */}
       <Modal visible={showCodesModal} transparent animationType="slide">
         <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.95)' }]}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
-              <Ionicons name="shield-checkmark" size={32} color={Colors.accentGreen} />
-              <Text style={styles.modalTitle}>Save Recovery Codes</Text>
-              <Text style={styles.modalSubtitle}>
-                Save these 8 one-time recovery codes in a safe place. If you forget your password, you can use any code once to reset it.
-              </Text>
-            </View>
+          <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingVertical: 40 }} showsVerticalScrollIndicator={false}>
+            <View style={styles.modalCard}>
+              <View style={styles.modalHeader}>
+                <Ionicons name="shield-checkmark" size={32} color={Colors.accentGreen} />
+                <Text style={styles.modalTitle}>Save Recovery Codes</Text>
+                <Text style={styles.modalSubtitle}>
+                  Save these 8 one-time recovery codes in a safe place. If you forget your password, you can use any code once to reset it.
+                </Text>
+              </View>
 
-            <View style={styles.codesGrid}>
-              {generatedCodes.slice(0, 8).map(c => c.startsWith('RELAY-') ? c : `RELAY-${c}`).map((code, idx) => (
-                <View key={idx} style={styles.codeBadge}>
-                  <Text style={styles.codeIndex}>{idx + 1}.</Text>
-                  <Text style={styles.codeText}>{code}</Text>
+              <View style={styles.codesGrid}>
+                {generatedCodes.slice(0, 8).map(c => c.startsWith('RELAY-') ? c : `RELAY-${c}`).map((code, idx) => (
+                  <View key={idx} style={styles.codeBadge}>
+                    <Text style={styles.codeIndex}>{idx + 1}.</Text>
+                    <Text style={styles.codeText}>{code}</Text>
+                  </View>
+                ))}
+              </View>
+
+              <View style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)', borderRadius: 12, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.4)' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                  <Ionicons name="warning" size={20} color="#EF4444" style={{ marginRight: 8 }} />
+                  <Text style={{ color: '#EF4444', fontSize: 16, fontWeight: 'bold' }}>IMPORTANT</Text>
                 </View>
-              ))}
-            </View>
-
-            <View style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)', borderRadius: 12, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.4)' }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                <Ionicons name="warning" size={20} color="#EF4444" style={{ marginRight: 8 }} />
-                <Text style={{ color: '#EF4444', fontSize: 16, fontWeight: 'bold' }}>IMPORTANT</Text>
+                <Text style={{ color: '#EF4444', fontSize: 13, lineHeight: 20 }}>
+                  If you lose these recovery codes, there is NO way to recover your account. For your privacy and security, we do not store or display these codes again. Please save them before continuing.
+                </Text>
               </View>
-              <Text style={{ color: '#EF4444', fontSize: 13, lineHeight: 20 }}>
-                If you lose these recovery codes, there is NO way to recover your account. For your privacy and security, we do not store or display these codes again. Please save them before continuing.
-              </Text>
-            </View>
 
-            <TouchableOpacity 
-              style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 24 }}
-              onPress={() => setUnderstandChecked(!understandChecked)}
-            >
-              <View style={[{ width: 24, height: 24, borderRadius: 6, borderWidth: 2, borderColor: Colors.primary, justifyContent: 'center', alignItems: 'center', marginRight: 12 }, understandChecked && { backgroundColor: Colors.primary }]}>
-                {understandChecked && <Ionicons name="checkmark" size={16} color="#FFF" />}
+              <TouchableOpacity 
+                style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 24 }}
+                onPress={() => setUnderstandChecked(!understandChecked)}
+              >
+                <View style={[{ width: 24, height: 24, borderRadius: 6, borderWidth: 2, borderColor: Colors.primary, justifyContent: 'center', alignItems: 'center', marginRight: 12 }, understandChecked && { backgroundColor: Colors.primary }]}>
+                  {understandChecked && <Ionicons name="checkmark" size={16} color="#FFF" />}
+                </View>
+                <Text style={{ flex: 1, color: '#FFF', fontSize: 14, lineHeight: 20 }}>
+                  I understand that if I lose these recovery codes, my account cannot be recovered.
+                </Text>
+              </TouchableOpacity>
+
+              {/* Action Buttons Row */}
+              <View style={styles.actionRow}>
+                <TouchableOpacity onPress={copyCodes} style={styles.actionBtn} activeOpacity={0.8}>
+                  <Ionicons name={copied ? "checkmark-circle" : "copy-outline"} size={18} color={Colors.primary} />
+                  <Text style={styles.actionBtnText}>{copied ? "Copied!" : "Copy"}</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={saveAsTxt} style={styles.actionBtn} activeOpacity={0.8}>
+                  <Ionicons name="document-text-outline" size={18} color={Colors.accentGreen} />
+                  <Text style={styles.actionBtnText}>Save TXT</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={saveAsPdf} style={styles.actionBtn} activeOpacity={0.8}>
+                  <Ionicons name="document-attach-outline" size={18} color="#F59E0B" />
+                  <Text style={styles.actionBtnText}>Save PDF</Text>
+                </TouchableOpacity>
               </View>
-              <Text style={{ flex: 1, color: '#FFF', fontSize: 14, lineHeight: 20 }}>
-                I understand that if I lose these recovery codes, my account cannot be recovered.
-              </Text>
-            </TouchableOpacity>
 
-            {/* Action Buttons Row */}
-            <View style={styles.actionRow}>
-              <TouchableOpacity onPress={copyCodes} style={styles.actionBtn} activeOpacity={0.8}>
-                <Ionicons name={copied ? "checkmark-circle" : "copy-outline"} size={18} color={Colors.primary} />
-                <Text style={styles.actionBtnText}>{copied ? "Copied!" : "Copy"}</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity onPress={saveAsTxt} style={styles.actionBtn} activeOpacity={0.8}>
-                <Ionicons name="document-text-outline" size={18} color={Colors.accentGreen} />
-                <Text style={styles.actionBtnText}>Save TXT</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity onPress={saveAsPdf} style={styles.actionBtn} activeOpacity={0.8}>
-                <Ionicons name="document-attach-outline" size={18} color="#F59E0B" />
-                <Text style={styles.actionBtnText}>Save PDF</Text>
+              <TouchableOpacity onPress={handleModalDone} disabled={!understandChecked} style={[styles.doneBtn, !understandChecked && { opacity: 0.5 }]} activeOpacity={0.85}>
+                <LinearGradient colors={[Colors.primary, Colors.primaryDark]} style={styles.doneBtnGrad}>
+                  <Text style={styles.doneBtnText}>I Have Saved My Codes</Text>
+                </LinearGradient>
               </TouchableOpacity>
             </View>
-
-            <TouchableOpacity onPress={handleModalDone} disabled={!understandChecked} style={[styles.doneBtn, !understandChecked && { opacity: 0.5 }]} activeOpacity={0.85}>
-              <LinearGradient colors={[Colors.primary, Colors.primaryDark]} style={styles.doneBtnGrad}>
-                <Text style={styles.doneBtnText}>I Have Saved My Codes</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-          </View>
+          </ScrollView>
         </View>
       </Modal>
     </LinearGradient>

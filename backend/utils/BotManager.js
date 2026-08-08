@@ -28,7 +28,7 @@ class BotManager {
 
     let text = (message.content || '').trim();
     let lowerText = text.toLowerCase();
-    
+
     // Determine active bot based on mention
     let activeBotStr = null;
     let activeBotId = null;
@@ -64,21 +64,21 @@ class BotManager {
       if (lowerText === 'reset' || (activeBotStr && lowerText.replace(new RegExp(`@?${activeBotStr}\\s*`, 'gi'), '').trim() === 'reset')) {
         const game = GameManager.getActiveGame(chat._id);
         if (game && typeof game.handleMessage === 'function') {
-           message.content = 'reset';
-           await game.handleMessage(message, chat, io);
+          message.content = 'reset';
+          await game.handleMessage(message, chat, io);
         } else {
-           GameManager.endGame(chat._id);
-           this.sendCustomMessage(chat, io, routingBotId, routingBotStr === 'mars' ? "Fine. I killed the game. Are you happy now?" : "🏳️ **Game forcibly purged from memory.**");
+          GameManager.endGame(chat._id);
+          this.sendCustomMessage(chat, io, routingBotId, routingBotStr === 'mars' ? "Fine. I killed the game. Are you happy now?" : "🏳️ **Game forcibly purged from memory.**");
         }
         return;
       }
 
       const handled = await GameManager.routeToActiveGame(message, chat, io);
-      if (handled) return; 
+      if (handled) return;
 
       const activeGame = GameManager.getActiveGame(chat._id);
       if (activeGame && ['ScrambleGame', 'GuessWordGame', 'RiddlesGame', 'EmojiGuessGame', 'BreachGame', 'SuspectGame'].includes(activeGame.constructor.name)) {
-         return; // suppress chatter during word games
+        return; // suppress chatter during word games
       }
     }
 
@@ -91,7 +91,7 @@ class BotManager {
     if (CommandRegistry.isAliasCommand(text)) {
       const [part1, part2] = text.split(/==?/).map(s => s.trim().toLowerCase());
       let cmdPart = part1, aliasPart = part2;
-      
+
       if (!CommandRegistry.isValidGameCommand(cmdPart) && CommandRegistry.isValidGameCommand(part2)) {
         cmdPart = part2;
         aliasPart = part1;
@@ -99,8 +99,8 @@ class BotManager {
 
       if (CommandRegistry.isValidGameCommand(cmdPart) && aliasPart) {
         await AliasManager.setAlias(chat._id, aliasPart, cmdPart);
-        const reply = (activeBotStr === 'mars') 
-          ? `Interesting choice. '${aliasPart}' now triggers '${cmdPart}'.` 
+        const reply = (activeBotStr === 'mars')
+          ? `Interesting choice. '${aliasPart}' now triggers '${cmdPart}'.`
           : `Done! '${aliasPart}' will now trigger '${cmdPart}'.`;
         return this.sendCustomMessage(chat, io, routingBotId, reply);
       }
@@ -121,7 +121,7 @@ class BotManager {
     const standaloneCommands = ['score', 'scores', 'activity', 'leaderboard', 'aliases', 'reset', 'remove'];
     const isStandaloneUtility = standaloneCommands.includes(resolvedCommand.split(' ')[0]) || resolvedCommand.startsWith('summarize ') || resolvedCommand.startsWith('calc ') || resolvedCommand.startsWith('calculate ');
     const isMath = /^[0-9+\-*/().\s]+$/.test(resolvedCommand.replace(/\s+/g, ''));
-    
+
     let effectiveBotStr = activeBotStr;
     let effectiveBotId = activeBotId;
 
@@ -135,14 +135,14 @@ class BotManager {
       } else if (isGameCommand || isStandaloneUtility || isMath) {
         const baseCmd = resolvedCommand.split(' ')[0];
         if (['breach', 'suspect', 'play', 'ask', 'rank', 'manage', 'guide'].includes(baseCmd)) {
-           effectiveBotStr = 'mars';
-           effectiveBotId = marsId;
+          effectiveBotStr = 'mars';
+          effectiveBotId = marsId;
         } else {
-           effectiveBotStr = 'mica';
-           effectiveBotId = micaId;
+          effectiveBotStr = 'mica';
+          effectiveBotId = micaId;
         }
       } else {
-        return; 
+        return;
       }
     }
 
@@ -151,7 +151,7 @@ class BotManager {
 
     if (resolvedCommand === 'help' || resolvedCommand.startsWith('help ')) {
       const helpTarget = resolvedCommand.replace('help', '').trim().toLowerCase();
-      
+
       if (helpTarget) {
         let helpText = '';
         switch (helpTarget) {
@@ -229,7 +229,7 @@ class BotManager {
 
     if (resolvedCommand === 'guide' || resolvedCommand.startsWith('guide ')) {
       const helpTarget = resolvedCommand.replace('guide', '').trim().toLowerCase();
-      
+
       if (helpTarget) {
         let helpText = '';
         switch (helpTarget) {
@@ -291,70 +291,70 @@ class BotManager {
 
     // AI Summarize
     if (cleanCommandText.startsWith('summarize ')) {
-       const textToSummarize = cleanCommandText.replace('summarize ', '').trim();
-       if (!textToSummarize) return this.sendCustomMessage(chat, io, activeBotId, "Please provide some text to summarize. (e.g. `summarize This is a long story...`)");
+      const textToSummarize = cleanCommandText.replace('summarize ', '').trim();
+      if (!textToSummarize) return this.sendCustomMessage(chat, io, activeBotId, "Please provide some text to summarize. (e.g. `summarize This is a long story...`)");
 
-       try {
-           const apiKey = activeBotStr === 'mars' ? process.env.MARS_GROQ_API_KEY : process.env.MICA_GROQ_API_KEY;
-           const model = activeBotStr === 'mars' ? 'qwen/qwen3.6-27b' : 'openai/gpt-oss-120b';
-           const systemPrompt = activeBotStr === 'mars'
-             ? 'You are Mars, a sarcastic, slightly arrogant assistant. Summarize the text provided by the user, but add a slightly mocking tone about how long-winded they are. Keep it short.'
-             : 'You are Mica, a smart, concise AI assistant. Provide a brief summary of the text provided by the user. Keep it short and to the point.';
-             
-           const botGroq = new Groq({ apiKey });
-           const completion = await botGroq.chat.completions.create({
-               messages: [
-                 { role: 'system', content: systemPrompt },
-                 { role: 'user', content: textToSummarize }
-               ],
-               model: model,
-           });
-           const summary = completion.choices[0]?.message?.content || "Sorry, I couldn't summarize that.";
-           return this.sendCustomMessage(chat, io, activeBotId, `📝 **Summary:**\n${summary}`);
-       } catch (error) {
-           console.error("Groq summarize error:", error);
-           return this.sendCustomMessage(chat, io, activeBotId, "Sorry, my summarization engine is currently down.");
-       }
+      try {
+        const apiKey = activeBotStr === 'mars' ? process.env.MARS_GROQ_API_KEY : process.env.MICA_GROQ_API_KEY;
+        const model = activeBotStr === 'mars' ? 'qwen/qwen3.6-27b' : 'openai/gpt-oss-120b';
+        const systemPrompt = activeBotStr === 'mars'
+          ? 'You are Mars, a sarcastic, slightly arrogant assistant. Summarize the text provided by the user, but add a slightly mocking tone about how long-winded they are. Keep it short.'
+          : 'You are Mica, a smart, concise AI assistant. Provide a brief summary of the text provided by the user. Keep it short and to the point.';
+
+        const botGroq = new Groq({ apiKey });
+        const completion = await botGroq.chat.completions.create({
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: textToSummarize }
+          ],
+          model: model,
+        });
+        const summary = completion.choices[0]?.message?.content || "Sorry, I couldn't summarize that.";
+        return this.sendCustomMessage(chat, io, activeBotId, `📝 **Summary:**\n${summary}`);
+      } catch (error) {
+        console.error("Groq summarize error:", error);
+        return this.sendCustomMessage(chat, io, activeBotId, "Sorry, my summarization engine is currently down.");
+      }
     }
 
     // Math calculation (implicit or explicit)
     if (/^[0-9+\-*/().\s]+$/.test(cleanCommandText)) {
-       try {
-           const mathExpr = cleanCommandText.replace(/\s+/g, '');
-           if (/[+\-*/]/.test(mathExpr) && /[0-9]/.test(mathExpr)) {
-               const result = math.evaluate(mathExpr);
-               if (typeof result === 'number' && isFinite(result)) {
-                   let formattedResult = Number.isInteger(result) ? result.toFixed(1) : parseFloat(result.toFixed(4)).toString();
-                   if (activeBotStr === 'mars') {
-                     const mathDialogues = [
-                       `${formattedResult}. You couldn't do that yourself?`,
-                       `You really needed my processing power for this? It's ${formattedResult}.`,
-                       `${formattedResult}. Next time use a calculator.`,
-                       `I'm a highly advanced AI, not a TI-84. The answer is ${formattedResult}.`
-                     ];
-                     const msg = mathDialogues[Math.floor(Math.random() * mathDialogues.length)];
-                     return this.sendCustomMessage(chat, io, activeBotId, msg);
-                   }
-                   return this.sendCustomMessage(chat, io, activeBotId, `${formattedResult}`);
-               }
-           }
-       } catch(e) {
-           // Invalid math expression, just pass through
-       }
+      try {
+        const mathExpr = cleanCommandText.replace(/\s+/g, '');
+        if (/[+\-*/]/.test(mathExpr) && /[0-9]/.test(mathExpr)) {
+          const result = math.evaluate(mathExpr);
+          if (typeof result === 'number' && isFinite(result)) {
+            let formattedResult = Number.isInteger(result) ? result.toFixed(1) : parseFloat(result.toFixed(4)).toString();
+            if (activeBotStr === 'mars') {
+              const mathDialogues = [
+                `${formattedResult}. You couldn't do that yourself?`,
+                `You really needed my processing power for this? It's ${formattedResult}.`,
+                `${formattedResult}. Next time use a calculator.`,
+                `I'm a highly advanced AI, not a TI-84. The answer is ${formattedResult}.`
+              ];
+              const msg = mathDialogues[Math.floor(Math.random() * mathDialogues.length)];
+              return this.sendCustomMessage(chat, io, activeBotId, msg);
+            }
+            return this.sendCustomMessage(chat, io, activeBotId, `${formattedResult}`);
+          }
+        }
+      } catch (e) {
+        // Invalid math expression, just pass through
+      }
     }
 
     if (cleanCommandText.startsWith('remove ') && !cleanCommandText.match(/remove (\d+)/)) {
       const args = cleanCommandText.split(' ').slice(1);
-      
+
       if (args[0] === 'inactive') {
         if (!chat.isGroupChat) return this.sendCustomMessage(chat, io, activeBotId, "This command can only be used in groups.");
         if (!isGroupAdmin) return this.sendCustomMessage(chat, io, activeBotId, "Only group admins can remove inactive members.");
-        
+
         let days = parseInt(args[1], 10);
         if (isNaN(days) || days < 1) days = 30; // default 30 days
 
         const cutoffDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-        
+
         const activeUserIdsRaw = await Message.distinct('sender', {
           chat: chat._id,
           createdAt: { $gte: cutoffDate }
@@ -362,34 +362,34 @@ class BotManager {
         const activeUserIds = activeUserIdsRaw.map(id => id.toString());
 
         const bots = [micaId, marsId, getRelayBotId()].map(id => id?.toString()).filter(Boolean);
-        
+
         let removedCount = 0;
         let newUsersList = [];
-        
+
         for (const userObj of chat.users) {
-           const uId = userObj._id ? userObj._id.toString() : userObj.toString();
-           const isUserAdmin = chat.groupAdmin?.toString() === uId || chat.admins?.some(a => a.toString() === uId);
-           if (bots.includes(uId) || isUserAdmin || activeUserIds.includes(uId)) {
-              newUsersList.push(userObj);
-           } else {
-              removedCount++;
-              io.to(chat._id.toString()).emit('user_left_group', { chatId: chat._id, userId: uId });
-              await User.findByIdAndUpdate(uId, { $pull: { activeChats: chat._id } });
-           }
+          const uId = userObj._id ? userObj._id.toString() : userObj.toString();
+          const isUserAdmin = chat.groupAdmin?.toString() === uId || chat.admins?.some(a => a.toString() === uId);
+          if (bots.includes(uId) || isUserAdmin || activeUserIds.includes(uId)) {
+            newUsersList.push(userObj);
+          } else {
+            removedCount++;
+            io.to(chat._id.toString()).emit('user_left_group', { chatId: chat._id, userId: uId });
+            await User.findByIdAndUpdate(uId, { $pull: { activeChats: chat._id } });
+          }
         }
-        
+
         if (removedCount > 0) {
-           chat.users = newUsersList;
-           await chat.save();
-           const reply = activeBotStr === 'mars' 
-              ? `Purged ${removedCount} inactive member(s). Good riddance.`
-              : `🧹 Removed ${removedCount} member(s) who were inactive for over ${days} days.`;
-           return this.sendCustomMessage(chat, io, activeBotId, reply);
+          chat.users = newUsersList;
+          await chat.save();
+          const reply = activeBotStr === 'mars'
+            ? `Purged ${removedCount} inactive member(s). Good riddance.`
+            : `🧹 Removed ${removedCount} member(s) who were inactive for over ${days} days.`;
+          return this.sendCustomMessage(chat, io, activeBotId, reply);
         } else {
-           const reply = activeBotStr === 'mars' 
-              ? `Everyone seems to be active. For now.` 
-              : `No inactive members found in the last ${days} days!`;
-           return this.sendCustomMessage(chat, io, activeBotId, reply);
+          const reply = activeBotStr === 'mars'
+            ? `Everyone seems to be active. For now.`
+            : `No inactive members found in the last ${days} days!`;
+          return this.sendCustomMessage(chat, io, activeBotId, reply);
         }
       }
 
@@ -404,8 +404,9 @@ class BotManager {
     }
 
     if (resolvedCommand === 'score' || resolvedCommand === 'scores') {
+      const settings = await GroupGameSettings.findOne({ groupId: chat._id });
       let content = `🏆 **Group Scores** 🏆\n\n`;
-      if (!settings.scores || settings.scores.size === 0) {
+      if (!settings || !settings.scores || settings.scores.size === 0) {
         content += activeBotStr === 'mars' ? "No one has scored any points yet. Shocking." : "No one has scored any points yet!";
       } else {
         const sortedScores = Array.from(settings.scores.entries()).sort((a, b) => b[1] - a[1]).slice(0, 10);
@@ -420,51 +421,51 @@ class BotManager {
     }
 
     if (resolvedCommand === 'activity' && activeBotStr === 'mica') {
-        const bots = [micaId, marsId, getRelayBotId()].filter(Boolean);
-        const totalMsgs = await Message.countDocuments({ chat: chat._id, sender: { $nin: bots } });
-        const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
-        const recentMsgs = await Message.countDocuments({ chat: chat._id, createdAt: { $gte: yesterday }, sender: { $nin: bots } });
-        
-        const topUsers = await Message.aggregate([
-          { $match: { chat: chat._id, sender: { $nin: bots } } },
-          { $group: { _id: '$sender', count: { $sum: 1 }, lastActive: { $max: '$createdAt' } } },
-          { $sort: { count: -1 } },
-          { $limit: 5 }
-        ]);
-        await User.populate(topUsers, { path: '_id', select: 'displayName username' });
-        
-        const formatRelTime = (d) => {
-          if (!d) return 'unknown';
-          const mins = Math.floor((Date.now() - new Date(d)) / 60000);
-          if (mins < 1) return 'just now';
-          if (mins < 60) return `${mins}m ago`;
-          const hrs = Math.floor(mins / 60);
-          if (hrs < 24) return `${hrs}h ago`;
-          return `${Math.floor(hrs / 24)}d ago`;
-        };
+      const bots = [micaId, marsId, getRelayBotId()].filter(Boolean);
+      const totalMsgs = await Message.countDocuments({ chat: chat._id, sender: { $nin: bots } });
+      const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const recentMsgs = await Message.countDocuments({ chat: chat._id, createdAt: { $gte: yesterday }, sender: { $nin: bots } });
 
-        let lbText = `📊 **Group Activity**\n\nTotal Messages: ${totalMsgs}\nLast 24 Hours: ${recentMsgs}\n\n🏆 **Top Members** 🏆\n`;
-        topUsers.forEach((u, i) => {
-          if (u._id) lbText += `${i + 1}. ${u._id.displayName || u._id.username} - ${u.count} msgs (${formatRelTime(u.lastActive)})\n`;
-        });
-        return this.sendCustomMessage(chat, io, activeBotId, lbText.trim() + `\n\nKeep the chat alive! 🚀`);
+      const topUsers = await Message.aggregate([
+        { $match: { chat: chat._id, sender: { $nin: bots } } },
+        { $group: { _id: '$sender', count: { $sum: 1 }, lastActive: { $max: '$createdAt' } } },
+        { $sort: { count: -1 } },
+        { $limit: 5 }
+      ]);
+      await User.populate(topUsers, { path: '_id', select: 'displayName username' });
+
+      const formatRelTime = (d) => {
+        if (!d) return 'unknown';
+        const mins = Math.floor((Date.now() - new Date(d)) / 60000);
+        if (mins < 1) return 'just now';
+        if (mins < 60) return `${mins}m ago`;
+        const hrs = Math.floor(mins / 60);
+        if (hrs < 24) return `${hrs}h ago`;
+        return `${Math.floor(hrs / 24)}d ago`;
+      };
+
+      let lbText = `📊 **Group Activity**\n\nTotal Messages: ${totalMsgs}\nLast 24 Hours: ${recentMsgs}\n\n🏆 **Top Members** 🏆\n`;
+      topUsers.forEach((u, i) => {
+        if (u._id) lbText += `${i + 1}. ${u._id.displayName || u._id.username} - ${u.count} msgs (${formatRelTime(u.lastActive)})\n`;
+      });
+      return this.sendCustomMessage(chat, io, activeBotId, lbText.trim() + `\n\nKeep the chat alive! 🚀`);
     }
 
     if (resolvedCommand === 'leaderboard' && activeBotStr === 'mica') {
-        const groups = await Chat.find({ isGroupChat: true }, '_id chatName');
-        const groupIds = groups.map(g => g._id);
-        const topGroups = await Message.aggregate([
-          { $match: { chat: { $in: groupIds } } },
-          { $group: { _id: '$chat', count: { $sum: 1 } } },
-          { $sort: { count: -1 } },
-          { $limit: 5 }
-        ]);
-        let globalLb = `🌍 **Global Group Leaderboard** 🌍\n\n`;
-        topGroups.forEach((g, i) => {
-          const groupName = groups.find(x => x._id.toString() === g._id.toString())?.chatName || 'Unknown Group';
-          globalLb += `${i + 1}. [[${g._id}|${groupName}]] - ${g.count} msgs\n`;
-        });
-        return this.sendCustomMessage(chat, io, activeBotId, globalLb.trim());
+      const groups = await Chat.find({ isGroupChat: true }, '_id chatName');
+      const groupIds = groups.map(g => g._id);
+      const topGroups = await Message.aggregate([
+        { $match: { chat: { $in: groupIds } } },
+        { $group: { _id: '$chat', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 5 }
+      ]);
+      let globalLb = `🌍 **Global Group Leaderboard** 🌍\n\n`;
+      topGroups.forEach((g, i) => {
+        const groupName = groups.find(x => x._id.toString() === g._id.toString())?.chatName || 'Unknown Group';
+        globalLb += `${i + 1}. [[${g._id}|${groupName}]] - ${g.count} msgs\n`;
+      });
+      return this.sendCustomMessage(chat, io, activeBotId, globalLb.trim());
     }
 
     // GAME TRIGGERING
@@ -472,7 +473,7 @@ class BotManager {
       const lowerCmd = resolvedCommand.toLowerCase();
       // Inform game classes which bot ID to use by passing it into start, or the games can import BotManager.getActiveBotId(chat._id)
       // Since games are already importing MarsEngine/BotEngine and calling sendCustomMessage, we'll route through here.
-      
+
       const gameEngineMap = {
         'riddle': '../games/modes/Riddles',
         'guess': '../games/modes/GuessWord',
@@ -492,7 +493,7 @@ class BotManager {
 
       if (gameEngineMap[lowerCmd]) {
         if (activeBotStr === 'mars') {
-           return this.sendCustomMessage(chat, io, activeBotId, "I don't play those silly games. Ask Mica.");
+          return this.sendCustomMessage(chat, io, activeBotId, "I don't play those silly games. Ask Mica.");
         }
         const GameClass = require(gameEngineMap[lowerCmd]);
         return GameClass.start(chat, message.sender, io, activeBotId);
@@ -500,7 +501,7 @@ class BotManager {
 
       if (marsGameEngineMap[lowerCmd]) {
         if (activeBotStr === 'mica') {
-           return this.sendCustomMessage(chat, io, activeBotId, "I don't know how to run that operation! Ask Mars! ✨");
+          return this.sendCustomMessage(chat, io, activeBotId, "I don't know how to run that operation! Ask Mars! ✨");
         }
         const GameClass = require(marsGameEngineMap[lowerCmd]);
         return GameClass.start(chat, message.sender, io, activeBotId);
@@ -514,13 +515,13 @@ class BotManager {
       const id = (u._id || u).toString();
       return id === micaId.toString() || id === marsId.toString();
     });
-    
+
     if (!isBotInGroup) return;
 
     const isMentioned = text.toLowerCase().includes(activeBotStr);
     const isMicaGreeting = /\b(hi|hello|hey|sup)\b/.test(cleanCommandText) && isMentioned;
     const isChaotic = message.content && message.content === message.content.toUpperCase() && message.content.length > 10;
-    const shouldRandomlyRoast = Math.random() < 0.05 && isChaotic && activeBotStr === 'mars'; 
+    const shouldRandomlyRoast = Math.random() < 0.05 && isChaotic && activeBotStr === 'mars';
 
     if (isMentioned || shouldRandomlyRoast || (activeBotStr === 'mica' && isMicaGreeting)) {
       this.generateAndSendReply(message, chat, io, activeBotStr, activeBotId);
@@ -529,7 +530,7 @@ class BotManager {
 
   getGenericReply(content, botStr, senderName) {
     const text = content.toLowerCase().replace(/[^a-z\s]/g, '').trim();
-    
+
     // Arrays of patterns to check
     const greetings = ['hi', 'hello', 'hey', 'heya', 'hlo', 'sup', 'yo', 'greetings', 'hiii'];
     const wyd = ['wyd', 'what you doing', 'what are you doing', 'whats up', 'wazzup', 'what are u doing', 'what u doing'];
@@ -541,7 +542,7 @@ class BotManager {
     const laughing = ['lol', 'lmao', 'haha', 'hehe', 'rofl', 'hahaha'];
     const insult = ['shut up', 'stfu', 'dumb', 'stupid', 'idiot', 'hate you', 'annoying'];
     const botStatus = ['are you real', 'are you human', 'are you a bot'];
-    
+
     // Check match
     const isGreeting = greetings.some(g => text === g || (text.split(' ').includes(g) && text.length < 15));
     const isWyd = wyd.some(w => text.includes(w));
@@ -716,11 +717,11 @@ class BotManager {
         temperature: 0.8,
         max_tokens: 150,
       });
-      
+
       replyContent = chatCompletion.choices[0]?.message?.content || "I have no words.";
     } catch (err) {
-        console.error(`Groq AI error (${botStr}):`, err);
-        replyContent = "I'm having a bit of a technical hiccup. Ask me again in a moment?";
+      console.error(`Groq AI error (${botStr}):`, err);
+      replyContent = "I'm having a bit of a technical hiccup. Ask me again in a moment?";
     }
 
     await this.sendCustomMessage(chat, io, botId, replyContent);
@@ -748,7 +749,7 @@ class BotManager {
             if (chat && chat.isGroupChat && chat.users.includes(marsId)) {
               await this.sendCustomMessage(chat, null, marsId, msg);
             }
-          } catch(e) {}
+          } catch (e) { }
         }
       }
     }
@@ -756,10 +757,17 @@ class BotManager {
 
   async sendCustomMessage(chat, io, senderId, content, messageType = 'text', pollData = undefined) {
     try {
-      let message = await Message.create({ sender: senderId, chat: chat._id, content, messageType, pollData });
+      const msgData = { sender: senderId, chat: chat._id, content, messageType, pollData };
+      const relayBotId = getRelayBotId();
+      if (relayBotId && senderId.toString() === relayBotId.toString()) {
+        // Relay Bot update/security messages expire after 7 days automatically
+        msgData.expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      }
+
+      let message = await Message.create(msgData);
       message = await Message.findById(message._id).populate('sender', 'username displayName profilePicture');
 
-      if (!chat.isGroupChat && chat.disappearAfter !== 86400) {
+      if (!chat.isGroupChat && chat.disappearAfter !== 86400 && (!relayBotId || senderId.toString() !== relayBotId.toString())) {
         await Chat.findByIdAndUpdate(chat._id, { latestMessage: message._id, disappearAfter: 86400 });
         chat.disappearAfter = 86400;
       } else {
@@ -787,11 +795,11 @@ class BotManager {
                 token: user.fcmToken,
                 data: {
                   chatId: chat._id.toString(),
-                  sender: JSON.stringify({ 
-                    _id: message.sender._id, 
-                    username: message.sender.username, 
+                  sender: JSON.stringify({
+                    _id: message.sender._id,
+                    username: message.sender.username,
                     displayName: message.sender.displayName,
-                    profilePicture: message.sender.profilePicture 
+                    profilePicture: message.sender.profilePicture
                   }),
                   chat: JSON.stringify({ isGroupChat: chat.isGroupChat, chatName: chat.chatName }),
                   title: chat.isGroupChat ? (chat.chatName || 'Group Chat') : (message.sender.displayName || message.sender.username),
@@ -831,16 +839,16 @@ class BotManager {
       const User = require('../models/User');
       const targetUser = await User.findById(newUserId);
       if (!targetUser) return;
-      
+
       let welcomeMsg = `Welcome ${targetUser.displayName || targetUser.username}!`;
       if (activeBotStr === 'mars') {
         welcomeMsg = `Welcome aboard, ${targetUser.displayName || targetUser.username}. Don't worry, I'll only judge you a little.`;
       } else {
         welcomeMsg = `Hello ${targetUser.displayName || targetUser.username}! Welcome to the group! ✨`;
       }
-      
+
       await this.sendCustomMessage(chat, io, activeBotId, welcomeMsg);
-    } catch(e) {
+    } catch (e) {
       console.error('Error in onUserJoinedGroup:', e);
     }
   }

@@ -263,56 +263,58 @@ export default function SecurityScreen({ navigation }) {
         onRequestClose={() => {}} // User MUST click the button to dismiss
       >
         <View style={styles.modalOverlayDark}>
-          <View style={styles.fullScreenModalContent}>
-            <View style={{ alignItems: 'center', marginBottom: 20 }}>
-              <View style={styles.modalIconWrap}>
-                <Ionicons name="shield-checkmark" size={32} color="#10B981" />
-              </View>
-              <Text style={styles.modalTitle}>Your New Recovery Codes</Text>
-              <Text style={styles.modalSubtitle}>Save these codes in a safe place. They will not be shown again.</Text>
-            </View>
-            
-            <View style={styles.gridContainer}>
-              {newCodes.map((codeObj, index) => (
-                <View key={index} style={styles.gridItem}>
-                  <Text style={styles.gridCodeText}>{codeObj.code || codeObj}</Text>
+          <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingVertical: 40 }} showsVerticalScrollIndicator={false}>
+            <View style={styles.fullScreenModalContent}>
+              <View style={{ alignItems: 'center', marginBottom: 20 }}>
+                <View style={styles.modalIconWrap}>
+                  <Ionicons name="shield-checkmark" size={32} color="#10B981" />
                 </View>
-              ))}
-            </View>
-
-            <View style={styles.cautionBox}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                <Ionicons name="warning" size={20} color="#EF4444" style={{ marginRight: 8 }} />
-                <Text style={styles.cautionTitle}>IMPORTANT</Text>
+                <Text style={styles.modalTitle}>Your New Recovery Codes</Text>
+                <Text style={styles.modalSubtitle}>Save these codes in a safe place. They will not be shown again.</Text>
               </View>
-              <Text style={styles.cautionText}>
-                If you lose these recovery codes, there is NO way to recover your account. For your privacy and security, we do not store or display these codes again. Please save them before continuing.
-              </Text>
-            </View>
-
-            <TouchableOpacity 
-              style={styles.checkboxContainer}
-              onPress={() => setUnderstandChecked(!understandChecked)}
-            >
-              <View style={[styles.checkbox, understandChecked && styles.checkboxChecked]}>
-                {understandChecked && <Ionicons name="checkmark" size={16} color="#FFF" />}
+              
+              <View style={styles.gridContainer}>
+                {newCodes.map((codeObj, index) => (
+                  <View key={index} style={styles.gridItem}>
+                    <Text style={styles.gridCodeText}>{codeObj.code || codeObj}</Text>
+                  </View>
+                ))}
               </View>
-              <Text style={styles.checkboxLabel}>
-                I understand that if I lose these recovery codes, my account cannot be recovered.
-              </Text>
-            </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={[styles.continueBtn, !understandChecked && styles.continueBtnDisabled]}
-              disabled={!understandChecked}
-              onPress={() => {
-                setNewCodesModalVisible(false);
-                setNewCodes([]);
-              }}
-            >
-              <Text style={styles.continueBtnText}>I've Saved Them, Continue</Text>
-            </TouchableOpacity>
-          </View>
+              <View style={styles.cautionBox}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                  <Ionicons name="warning" size={20} color="#EF4444" style={{ marginRight: 8 }} />
+                  <Text style={styles.cautionTitle}>IMPORTANT</Text>
+                </View>
+                <Text style={styles.cautionText}>
+                  If you lose these recovery codes, there is NO way to recover your account. For your privacy and security, we do not store or display these codes again. Please save them before continuing.
+                </Text>
+              </View>
+
+              <TouchableOpacity 
+                style={styles.checkboxContainer}
+                onPress={() => setUnderstandChecked(!understandChecked)}
+              >
+                <View style={[styles.checkbox, understandChecked && styles.checkboxChecked]}>
+                  {understandChecked && <Ionicons name="checkmark" size={16} color="#FFF" />}
+                </View>
+                <Text style={styles.checkboxLabel}>
+                  I understand that if I lose these recovery codes, my account cannot be recovered.
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={[styles.continueBtn, !understandChecked && styles.continueBtnDisabled]}
+                disabled={!understandChecked}
+                onPress={() => {
+                  setNewCodesModalVisible(false);
+                  setNewCodes([]);
+                }}
+              >
+                <Text style={styles.continueBtnText}>I've Saved Them, Continue</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
         </View>
       </Modal>
 
