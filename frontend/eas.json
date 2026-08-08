@@ -14,8 +14,8 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://relay-api-jlpx.onrender.com/api",
-        "EXPO_PUBLIC_SOCKET_URL": "https://relay-api-jlpx.onrender.com",
+        "EXPO_PUBLIC_API_URL": "https://relay-test-k4mh.onrender.com/api",
+        "EXPO_PUBLIC_SOCKET_URL": "https://relay-test-k4mh.onrender.com",
         "EXPO_PUBLIC_GIPHY_API_KEY": "KwfNr95SXbDkYlmD2QPZFPm890JiYPW8"
       },
       "channel": "preview"
@@ -25,8 +25,8 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://relay-api-jlpx.onrender.com/api",
-        "EXPO_PUBLIC_SOCKET_URL": "https://relay-api-jlpx.onrender.com",
+        "EXPO_PUBLIC_API_URL": "https://relay-test-k4mh.onrender.com/api",
+        "EXPO_PUBLIC_SOCKET_URL": "https://relay-test-k4mh.onrender.com",
         "EXPO_PUBLIC_GIPHY_API_KEY": "KwfNr95SXbDkYlmD2QPZFPm890JiYPW8"
       },
       "channel": "production"

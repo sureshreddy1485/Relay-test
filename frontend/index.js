@@ -6,7 +6,7 @@ import notifee, { AndroidStyle, AndroidImportance, EventType } from '@notifee/re
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
-const getBaseUrl = () => process.env.EXPO_PUBLIC_API_URL || 'https://relay-api-jlpx.onrender.com/api';
+const getBaseUrl = () => process.env.EXPO_PUBLIC_API_URL || 'https://relay-test-k4mh.onrender.com/api';
 
 // ═══════════════════════════════════════════════════════════════
 // INLINE notification display — no external module imports

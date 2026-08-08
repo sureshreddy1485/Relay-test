@@ -5,7 +5,7 @@ const path = require('path');
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 async function checkTokens() {
-  const API_URL = 'https://relay-api-jlpx.onrender.com/api/messages/check-tokens';
+  const API_URL = 'https://relay-test-k4mh.onrender.com/api/messages/check-tokens';
   
   try {
     const response = await fetch(API_URL, {

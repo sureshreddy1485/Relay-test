@@ -34,7 +34,7 @@ We hope you love using Relay as much as we loved building it. Enjoy chatting!`;
 
   console.log('📡 Sending Welcome Broadcast...');
   try {
-    const res = await fetch('https://relay-api-jlpx.onrender.com/api/messages/broadcast', {
+    const res = await fetch('https://relay-test-k4mh.onrender.com/api/messages/broadcast', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

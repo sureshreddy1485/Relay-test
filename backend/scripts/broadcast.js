@@ -18,7 +18,7 @@ const broadcastMessage = async (messageContent) => {
     }
 
     // You can also change this to your local server (e.g. http://localhost:5000) if testing locally.
-    const apiUrl = 'https://relay-api-jlpx.onrender.com/api/messages/broadcast';
+    const apiUrl = 'https://relay-test-k4mh.onrender.com/api/messages/broadcast';
 
     const response = await fetch(apiUrl, {
       method: 'POST',
