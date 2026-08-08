@@ -25,7 +25,7 @@ const SectionTitle = ({ label }) => (
   <Text style={styles.sectionTitle}>{label}</Text>
 );
 
-const SettingRow = ({ icon, label, value, onPress, danger, right, iconBg, iconColor }) => {
+const SettingRow = ({ icon, label, subtitle, value, onPress, danger, right, iconBg, iconColor }) => {
   const bg = danger ? '#EF444420' : (iconBg || Colors.primary + '20');
   const color = danger ? '#EF4444' : (iconColor || Colors.primary);
   return (
@@ -33,7 +33,10 @@ const SettingRow = ({ icon, label, value, onPress, danger, right, iconBg, iconCo
       <View style={[styles.iconWrap, { backgroundColor: bg }]}>
         <Ionicons name={icon} size={20} color={color} />
       </View>
-      <Text style={[styles.rowLabel, danger && { color: '#EF4444', fontWeight: '600' }]}>{label}</Text>
+      <View style={{ flex: 1, marginRight: 8 }}>
+        <Text style={[styles.rowLabel, danger && { color: '#EF4444', fontWeight: '600' }]}>{label}</Text>
+        {subtitle && <Text style={{ color: Colors.dark.muted, fontSize: 12, marginTop: 2 }}>{subtitle}</Text>}
+      </View>
       {right ?? (
         <View style={styles.rowRight}>
           {value ? <Text style={styles.rowValue}>{value}</Text> : null}
@@ -476,11 +479,12 @@ export default function SettingsScreen({ navigation }) {
         <SectionTitle label="Account" />
         <View style={styles.section}>
           <SettingRow
-            icon="lock-closed-outline"
-            label="Change Password"
-            iconBg="#3B82F620"
-            iconColor="#3B82F6"
-            onPress={() => navigation.navigate('ChangePassword')}
+            icon="shield-checkmark-outline"
+            label="Security"
+            subtitle="Passwords & Recovery Codes"
+            iconBg="#10B98120"
+            iconColor="#10B981"
+            onPress={() => navigation.navigate('Security')}
           />
           <SettingRow
             icon="desktop-outline"

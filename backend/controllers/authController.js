@@ -9,11 +9,11 @@ const { uploadToCloudinary } = require('../utils/cloudinaryUpload');
 
 const crypto = require('crypto');
 
-// Generate 8 one-time recovery codes
+// Generate 9 one-time recovery codes
 const generateRecoveryCodes = () => {
   const codes = [];
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 9; i++) {
     let part1 = '';
     let part2 = '';
     for (let j = 0; j < 4; j++) {
@@ -80,6 +80,7 @@ const signup = asyncHandler(async (req, res) => {
     email: email.toLowerCase(),
     password,
     recoveryCodes,
+    recoveryCodesGeneratedAt: Date.now(),
     displayName: displayName || username,
     profilePicture,
     devices: [{ deviceId: sessionId, deviceName, lastActive: Date.now() }]
@@ -232,16 +233,19 @@ const forgotPassword = asyncHandler(async (req, res) => {
     ? { email: identifier.toLowerCase() }
     : { username: identifier.toLowerCase() };
 
-  const user = await User.findOne(query).select('+recoveryCodes +lastPasswordChange');
+  const user = await User.findOne(query).select('+recoveryCodes +lastPasswordChange +passwordChangeHistory');
   if (!user) {
     res.status(404);
     throw new Error('User not found');
   }
 
-  const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
-  if (user.lastPasswordChange && (Date.now() - new Date(user.lastPasswordChange).getTime() < TWO_WEEKS_MS)) {
+  const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+  const recentChanges = (user.passwordChangeHistory || []).filter(
+    (date) => Date.now() - new Date(date).getTime() < THIRTY_DAYS_MS
+  );
+  if (recentChanges.length >= 5) {
     res.status(403);
-    throw new Error('Password can only be changed once every 14 days.');
+    throw new Error('Password can only be changed 5 times in a 30-day period.');
   }
 
   const cleanInputCode = recoveryCode.trim().toUpperCase().replace(/\s+/g, '');
@@ -258,6 +262,8 @@ const forgotPassword = asyncHandler(async (req, res) => {
   user.recoveryCodes[matchedCodeIndex].used = true;
   user.password = newPassword;
   user.lastPasswordChange = Date.now();
+  if (!user.passwordChangeHistory) user.passwordChangeHistory = [];
+  user.passwordChangeHistory.push(Date.now());
   user.devices = []; // Log out all devices on password reset
   await user.save();
 
@@ -275,12 +281,15 @@ const changePassword = asyncHandler(async (req, res) => {
     throw new Error('Please provide current password and new password');
   }
 
-  const user = await User.findById(req.user._id).select('+password +lastPasswordChange');
+  const user = await User.findById(req.user._id).select('+password +lastPasswordChange +passwordChangeHistory');
 
-  const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
-  if (user.lastPasswordChange && (Date.now() - new Date(user.lastPasswordChange).getTime() < TWO_WEEKS_MS)) {
+  const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+  const recentChanges = (user.passwordChangeHistory || []).filter(
+    (date) => Date.now() - new Date(date).getTime() < THIRTY_DAYS_MS
+  );
+  if (recentChanges.length >= 5) {
     res.status(403);
-    throw new Error('Password can only be changed once every 14 days.');
+    throw new Error('Password can only be changed 5 times in a 30-day period.');
   }
 
   const isMatch = await user.matchPassword(currentPassword);
@@ -291,6 +300,8 @@ const changePassword = asyncHandler(async (req, res) => {
 
   user.password = newPassword;
   user.lastPasswordChange = Date.now();
+  if (!user.passwordChangeHistory) user.passwordChangeHistory = [];
+  user.passwordChangeHistory.push(Date.now());
   // Clear all devices except the current one
   if (req.user && req.user.currentSessionId) {
     user.devices = user.devices.filter(d => d.deviceId === req.user.currentSessionId);
@@ -367,4 +378,82 @@ const logoutDevice = asyncHandler(async (req, res) => {
   res.status(200).json({ success: true, message: 'Device logged out' });
 });
 
-module.exports = { signup, login, forgotPassword, changePassword, getMe, logout, getDevices, logoutDevice };
+// @desc  Get security status
+// @route GET /api/auth/security-status
+// @access Private
+const getSecurityStatus = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id).select('+recoveryCodes +passwordChangeHistory +recoveryCodesGeneratedAt createdAt');
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+  const recentChanges = (user.passwordChangeHistory || []).filter(
+    (date) => Date.now() - new Date(date).getTime() < THIRTY_DAYS_MS
+  );
+  
+  const totalCodes = user.recoveryCodes?.length || 9;
+  const usedCodes = user.recoveryCodes?.filter((c) => c.used).length || 0;
+  const generatedAt = user.recoveryCodesGeneratedAt || user.createdAt;
+
+  const codesAreOldEnough = Date.now() - new Date(generatedAt).getTime() >= THIRTY_DAYS_MS;
+  const allCodesUsed = usedCodes === totalCodes;
+  const canRegenerate = allCodesUsed || codesAreOldEnough;
+
+  res.status(200).json({
+    success: true,
+    security: {
+      recoveryCodes: {
+        total: totalCodes,
+        used: usedCodes,
+        remaining: totalCodes - usedCodes,
+        canRegenerate,
+        generatedAt,
+      },
+      passwordChanges: {
+        recentCount: recentChanges.length,
+        remaining: Math.max(0, 5 - recentChanges.length),
+        limit: 5,
+      },
+    },
+  });
+});
+
+// @desc  Regenerate recovery codes
+// @route POST /api/auth/regenerate-recovery-codes
+// @access Private
+const regenerateRecoveryCodes = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id).select('+recoveryCodes +recoveryCodesGeneratedAt createdAt');
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+  const totalCodes = user.recoveryCodes?.length || 9;
+  const usedCodes = user.recoveryCodes?.filter((c) => c.used).length || 0;
+  const generatedAt = user.recoveryCodesGeneratedAt || user.createdAt;
+
+  const codesAreOldEnough = Date.now() - new Date(generatedAt).getTime() >= THIRTY_DAYS_MS;
+  const allCodesUsed = usedCodes === totalCodes;
+  const canRegenerate = allCodesUsed || codesAreOldEnough;
+
+  if (!canRegenerate) {
+    res.status(403);
+    throw new Error('Regeneration is available when all codes are used or the set is 30+ days old.');
+  }
+
+  const plainRecoveryCodes = generateRecoveryCodes();
+  user.recoveryCodes = plainRecoveryCodes.map((code) => ({ code, used: false }));
+  user.recoveryCodesGeneratedAt = Date.now();
+  await user.save();
+
+  res.status(200).json({
+    success: true,
+    message: 'Recovery codes regenerated successfully',
+    recoveryCodes: plainRecoveryCodes,
+  });
+});
+
+module.exports = { signup, login, forgotPassword, changePassword, getMe, logout, getDevices, logoutDevice, getSecurityStatus, regenerateRecoveryCodes };

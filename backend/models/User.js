@@ -32,6 +32,8 @@ const userSchema = new mongoose.Schema(
       select: false,
     },
     lastPasswordChange: { type: Date, default: Date.now },
+    passwordChangeHistory: [{ type: Date }],
+    recoveryCodesGeneratedAt: { type: Date, default: Date.now },
     recoveryCodes: {
       type: [
         {
