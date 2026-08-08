@@ -922,15 +922,7 @@ const setDisappearTimer = asyncHandler(async (req, res) => {
     res.status(403); throw new Error('Not a member of this chat');
   }
 
-  // Prevent changing timer for 1-on-1 bot chats
-  if (!chat.isGroupChat) {
-    const User = require('../models/User');
-    const botUsers = await User.find({ _id: { $in: chat.users }, role: 'system_bot' });
-    if (botUsers.length > 0) {
-      res.status(400);
-      throw new Error('System Bot conversations must use the default 24-hour disappearing timer to save space.');
-    }
-  }
+
   if (chat.isGroupChat) {
     const isOwner = chat.groupAdmin && chat.groupAdmin.toString() === req.user._id.toString();
     const isAdmin = chat.admins && chat.admins.map(a => a.toString()).includes(req.user._id.toString());

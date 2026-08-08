@@ -263,7 +263,7 @@ export default function ChatRoomScreen({ route, navigation }) {
         content: formattedContent,
         messageType: 'text'
       });
-      useChatStore.getState().addMessageToChat(chat._id, data.message);
+      useChatStore.getState().addMessage(chat._id, data.message);
       setShowHelpModal(false);
       setHelpCategory(null);
       setHelpText('');

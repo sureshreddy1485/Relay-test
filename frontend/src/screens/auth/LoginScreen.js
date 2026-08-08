@@ -158,10 +158,14 @@ export default function LoginScreen({ navigation }) {
                       <Image source={{ uri: acc.avatar }} style={{ width: 44, height: 44, borderRadius: 22, marginBottom: 8 }} />
                     ) : (
                       <LinearGradient colors={[Colors.primary, Colors.primaryDark]} style={{ width: 44, height: 44, borderRadius: 22, marginBottom: 8, alignItems: 'center', justifyContent: 'center' }}>
-                        <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 18 }}>{acc.name?.charAt(0).toUpperCase()}</Text>
+                        <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 18 }}>
+                          {(acc.name || acc.username || acc.identifier || '?').charAt(0).toUpperCase()}
+                        </Text>
                       </LinearGradient>
                     )}
-                    <Text style={{ color: Colors.dark.text, fontSize: 12, fontWeight: '600', textAlign: 'center' }} numberOfLines={1}>{acc.name}</Text>
+                    <Text style={{ color: Colors.dark.text, fontSize: 12, fontWeight: '600', textAlign: 'center', minHeight: 16 }} numberOfLines={1}>
+                      {acc.name || acc.username || acc.identifier}
+                    </Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
