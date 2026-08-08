@@ -44,56 +44,56 @@ export default function HelpScreen({ navigation }) {
       icon: 'chatbubbles',
       title: '1. Chatting & Media',
       color: '#3B82F6',
-      description: 'Relay offers a lightning-fast messaging experience. You can send text messages, voice notes, high-quality photos, and files instantly.\n\n• Mistakes happen! You have exactly 15 minutes to edit any text message after sending it.\n• Tap the "+" icon next to the chat bar to explore rich media options, including View Once images, Documents, and Polls.\n• Long-press any message to react with emojis or reply directly to it.'
+      description: 'Relay offers a lightning-fast, seamless messaging experience designed for ultimate reliability.\n\n✨ Instant Messaging\nSend text messages, high-quality photos, and files in the blink of an eye.\n\n✨ Edit Messages\nMistakes happen! You have exactly 15 minutes to edit any text message after sending it. Just long-press the message and tap "Edit".\n\n✨ Rich Media & Polls\nTap the "+" icon next to the chat bar to explore attachments, send documents, or create interactive Polls for your friends to vote on.\n\n✨ Reactions & Replies\nLong-press any message to instantly react with emojis or reply directly to keep the conversation organized.'
     },
     {
       id: 'disappearing',
       icon: 'timer',
       title: '2. Disappearing Messages',
       color: '#EC4899',
-      description: 'Privacy is our top priority. You have full control over how long your messages exist.\n\n• View Once Media: Send a photo or video using the "+" menu and select "View Once". It will instantly self-destruct the moment the recipient closes it.\n• Auto-Deleting Chats: Open any chat\'s settings to enable Disappearing Messages. You can set a timer (like 24 hours or 7 days) and all messages sent in that chat will automatically vanish once the time is up.'
+      description: 'Privacy is our top priority. You have full control over how long your digital footprint exists.\n\n👻 View Once Media\nSend a highly sensitive photo or video using the "+" menu and select "View Once". It will instantly self-destruct the moment the recipient closes it.\n\n⏱️ Auto-Deleting Chats\nOpen any chat\'s settings to enable Disappearing Messages. You can set a timer (e.g., 24 hours, 7 days), and all messages sent in that chat will automatically vanish without a trace once the time is up.'
     },
     {
       id: 'groups',
       icon: 'people',
       title: '3. Communities & Groups',
       color: '#10B981',
-      description: 'Build your own community by creating a Group Chat. You can add your friends, assign admins, and share moments together.\n\n• Group Tags: Every group gets a unique Group Tag. Others can search for this tag in the Communities tab to join instantly.\n• Auto-Accept: Want a public community? Turn on "Auto-Accept Requests" in group settings, and anyone with the tag can join without waiting for admin approval.'
+      description: 'Build your own thriving community by creating a Group Chat. Add friends, assign admins, and manage permissions.\n\n🏷️ Unique Group Tags\nEvery group gets a unique Group Tag. Others can search for this exact tag in the Communities tab to join your group instantly.\n\n🔓 Auto-Accept Requests\nWant a massive public community? Turn on "Auto-Accept Requests" in group settings, and anyone with the tag can join without waiting for admin approval.'
     },
     {
       id: 'moments',
       icon: 'aperture',
       title: '4. Moments (Stories)',
       color: '#F43F5E',
-      description: 'Moments allow you to share your day with your friends. Post a photo, video, or a text update to your Moments.\n\n• Your Moments will automatically disappear after 24 hours.\n• Only your friends can view your Moments, and you can always check the viewer list to see exactly who watched them.'
+      description: 'Moments allow you to share snippets of your day with all your friends at once.\n\n📸 Share Your Day\nPost a photo, video, or a colorful text update to your Moments tab.\n\n⏳ 24-Hour Lifespan\nYour Moments will automatically disappear exactly 24 hours after posting.\n\n👀 See Who Viewed\nOnly your friends can view your Moments, and you can always swipe up to check the viewer list to see exactly who watched them.'
     },
     {
       id: 'bots',
       icon: 'planet',
       title: '5. Meet the Bots: Mica & Mars',
       color: '#8B5CF6',
-      description: 'Relay comes with two built-in AI companions that can be added to any group chat!\n\n• Mica: Your friendly, helpful, and polite AI assistant.\n• Mars: Your sarcastic, witty, and slightly rebellious AI companion.\n\nBot Commands:\n• !swap : Group admins can type this to instantly switch between Mica and Mars.\n• !help : Type this when Mica is active to get a full guide on what she can do.\n• Ask them anything! Just type their name or reply to their messages to start a conversation.'
+      description: 'Relay features two incredibly smart, native AI companions that can be added to any chat!\n\n🤖 Mica\nYour friendly, helpful, and exceptionally polite AI assistant.\n\n🔥 Mars\nYour sarcastic, witty, and slightly rebellious AI companion.\n\n⭐ Commands & Routing\nBoth bots work seamlessly together! Depending on what you need, the right bot will answer:\n• help : Type this to trigger Mica. She will provide a full, helpful guide on what she can do.\n• guide : Type this to trigger Mars. He will give you his own (probably sarcastic) guide to the system.\n• Ask them anything! Just type their name or reply to their messages to start a conversation.'
     },
     {
       id: 'games',
       icon: 'game-controller',
       title: '6. Play Games',
       color: '#F59E0B',
-      description: 'Bored? Relay brings multiplayer games directly into your group chats!\n\nJust type "!scramble" in any group chat where a bot is active. The bot will manage the game and explain all the rules. Race against your friends and climb the Global Leaderboard!'
+      description: 'Bored? Relay brings massive multiplayer games directly into your group chats!\n\n🎮 How to Play\nThere are a lot of different games available! Just type "games" to have Mica show you the full list, or type "play" to let Mars show you his collection.\n\n🏆 Compete\nRace against your friends, solve puzzles, and climb the Global Leaderboard!'
     },
     {
       id: 'privacy',
       icon: 'shield-checkmark',
       title: '7. Privacy & Security',
       color: '#EAB308',
-      description: 'You are in complete control of your data. Navigate to Settings > Privacy to fine-tune your account.\n\n• You can hide your Last Seen, Profile Picture, and Read Receipts.\n• You can silently remove friends without them being notified.\n• Need a break? You can safely deactivate your account and return whenever you are ready.'
+      description: 'You are in absolute control of your data. Navigate to Settings > Privacy to fine-tune your account footprint.\n\n🕵️ Visibility Control\nYou can hide your Last Seen status, Profile Picture, and Read Receipts from strangers or even friends.\n\n🔇 Silent Removal\nYou can remove friends without them ever being notified.\n\n🛑 Account Deactivation\nNeed a break? You can safely deactivate your account, and return whenever you are ready with all your data intact.'
     },
     {
       id: 'notifications',
       icon: 'notifications',
       title: '8. Smart Notifications',
       color: '#06B6D4',
-      description: 'Our native background engine ensures you never miss a beat.\n\n• Even if Relay is completely closed, you will still receive notifications securely and instantly.\n• You can quick-reply to messages or mark them as read directly from your phone\'s notification panel or lock screen.'
+      description: 'Our custom-built background engine ensures you never miss a beat.\n\n⚡ Instant Delivery\nEven if Relay is completely closed or swiped away, you will still receive notifications securely and instantly.\n\n📲 Quick Actions\nYou can quick-reply to messages or mark them as read directly from your phone\'s notification panel or lock screen, without even opening the app!'
     }
   ];
 

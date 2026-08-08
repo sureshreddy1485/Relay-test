@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Relay",
-    "slug": "relay",
+    "slug": "relay-new",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -88,7 +88,7 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "c554c8a4-c5b3-49a9-bc40-44d3d737700a"
+        "projectId": "2d81ed8e-3ff7-4d9d-b712-bda53f83eda1"
       }
     },
     "owner": "sureshsekhar27",

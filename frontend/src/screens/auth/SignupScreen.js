@@ -165,7 +165,7 @@ export default function SignupScreen({ navigation }) {
 
   const saveAsTxt = async () => {
     try {
-      const FileSystem = require('expo-file-system');
+      const FileSystem = require('expo-file-system/legacy');
       const Sharing = require('expo-sharing');
       
       const displayCodes = generatedCodes.slice(0, 8).map(c => c.startsWith('RELAY-') ? c : `RELAY-${c}`);
@@ -229,7 +229,7 @@ export default function SignupScreen({ navigation }) {
 
       const Print = require('expo-print');
       const Sharing = require('expo-sharing');
-      const FileSystem = require('expo-file-system');
+      const FileSystem = require('expo-file-system/legacy');
       
       const { uri } = await Print.printToFileAsync({ html: htmlContent });
       const pdfUri = `${FileSystem.cacheDirectory}relax_recovery_codes.pdf`;
