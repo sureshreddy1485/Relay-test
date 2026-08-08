@@ -84,9 +84,11 @@ export default function ChangePasswordScreen({ navigation }) {
                 secureTextEntry={!show[showKey]}
                 autoCapitalize="none"
               />
-              <TouchableOpacity onPress={() => toggleShow(showKey)}>
-                <Ionicons name={show[showKey] ? 'eye-off-outline' : 'eye-outline'} size={20} color={Colors.dark.muted} />
-              </TouchableOpacity>
+              {key !== 'confirmPassword' && (
+                <TouchableOpacity onPress={() => toggleShow(showKey)}>
+                  <Ionicons name={show[showKey] ? 'eye-off-outline' : 'eye-outline'} size={20} color={Colors.dark.muted} />
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         ))}

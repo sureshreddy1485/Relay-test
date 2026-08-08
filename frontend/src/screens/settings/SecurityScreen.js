@@ -1,16 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../theme/colors';
 import api from '../../services/api';
 import useAuthStore from '../../store/useAuthStore';
+import { useAlert } from '../../components/CustomAlert';
 
 export default function SecurityScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [securityData, setSecurityData] = useState(null);
   const [regenerating, setRegenerating] = useState(false);
+  
+  // Modals
   const [modalVisible, setModalVisible] = useState(false);
+  const [newCodesModalVisible, setNewCodesModalVisible] = useState(false);
+  
+  // New Codes State
+  const [newCodes, setNewCodes] = useState([]);
+  const [understandChecked, setUnderstandChecked] = useState(false);
+
   const { user } = useAuthStore();
+  const { showAlert } = useAlert();
 
   const fetchSecurityStatus = async () => {
     try {
@@ -18,7 +28,7 @@ export default function SecurityScreen({ navigation }) {
       const { data } = await api.get('/auth/security-status');
       setSecurityData(data.security);
     } catch (error) {
-      Alert.alert('Error', error.response?.data?.message || 'Failed to fetch security status');
+      showAlert('Error', error.response?.data?.message || 'Failed to fetch security status');
     } finally {
       setLoading(false);
     }
@@ -31,9 +41,9 @@ export default function SecurityScreen({ navigation }) {
   const handleRegenerate = async () => {
     if (!securityData?.recoveryCodes?.canRegenerate) return;
     
-    Alert.alert(
+    showAlert(
       'Regenerate Recovery Codes',
-      'This will invalidate your current recovery codes and generate a new set of 9 codes. Are you sure?',
+      'This will invalidate your current recovery codes and generate a new set of 8 codes. Are you sure?',
       [
         { text: 'Cancel', style: 'cancel' },
         { 
@@ -43,11 +53,12 @@ export default function SecurityScreen({ navigation }) {
             try {
               setRegenerating(true);
               const { data } = await api.post('/auth/regenerate-recovery-codes');
-              Alert.alert('Success', 'Recovery codes regenerated. Make sure to save them safely.', [
-                { text: 'OK', onPress: () => fetchSecurityStatus() }
-              ]);
+              setNewCodes(data.recoveryCodes || []);
+              setUnderstandChecked(false);
+              setNewCodesModalVisible(true);
+              fetchSecurityStatus();
             } catch (error) {
-              Alert.alert('Error', error.response?.data?.message || 'Failed to regenerate codes');
+              showAlert('Error', error.response?.data?.message || 'Failed to regenerate codes');
             } finally {
               setRegenerating(false);
             }
@@ -132,7 +143,7 @@ export default function SecurityScreen({ navigation }) {
             )}
           </TouchableOpacity>
           <Text style={styles.cardFooterText}>
-            Regeneration is available when all 9 codes are used or the set is 30+ days old.
+            Regeneration is available when all 8 codes are used or the set is 30+ days old.
           </Text>
         </View>
 
@@ -239,6 +250,67 @@ export default function SecurityScreen({ navigation }) {
               onPress={() => setModalVisible(false)}
             >
               <Text style={styles.modalCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* New Recovery Codes Modal */}
+      <Modal
+        visible={newCodesModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {}} // User MUST click the button to dismiss
+      >
+        <View style={styles.modalOverlayDark}>
+          <View style={styles.fullScreenModalContent}>
+            <View style={{ alignItems: 'center', marginBottom: 20 }}>
+              <View style={styles.modalIconWrap}>
+                <Ionicons name="shield-checkmark" size={32} color="#10B981" />
+              </View>
+              <Text style={styles.modalTitle}>Your New Recovery Codes</Text>
+              <Text style={styles.modalSubtitle}>Save these codes in a safe place. They will not be shown again.</Text>
+            </View>
+            
+            <View style={styles.gridContainer}>
+              {newCodes.map((codeObj, index) => (
+                <View key={index} style={styles.gridItem}>
+                  <Text style={styles.gridCodeText}>{codeObj.code || codeObj}</Text>
+                </View>
+              ))}
+            </View>
+
+            <View style={styles.cautionBox}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                <Ionicons name="warning" size={20} color="#EF4444" style={{ marginRight: 8 }} />
+                <Text style={styles.cautionTitle}>IMPORTANT</Text>
+              </View>
+              <Text style={styles.cautionText}>
+                If you lose these recovery codes, there is NO way to recover your account. For your privacy and security, we do not store or display these codes again. Please save them before continuing.
+              </Text>
+            </View>
+
+            <TouchableOpacity 
+              style={styles.checkboxContainer}
+              onPress={() => setUnderstandChecked(!understandChecked)}
+            >
+              <View style={[styles.checkbox, understandChecked && styles.checkboxChecked]}>
+                {understandChecked && <Ionicons name="checkmark" size={16} color="#FFF" />}
+              </View>
+              <Text style={styles.checkboxLabel}>
+                I understand that if I lose these recovery codes, my account cannot be recovered.
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[styles.continueBtn, !understandChecked && styles.continueBtnDisabled]}
+              disabled={!understandChecked}
+              onPress={() => {
+                setNewCodesModalVisible(false);
+                setNewCodes([]);
+              }}
+            >
+              <Text style={styles.continueBtnText}>I've Saved Them, Continue</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -421,10 +493,17 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: 'rgba(0,0,0,0.85)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+  },
+  modalOverlayDark: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
   },
   modalContent: {
     width: '100%',
@@ -434,6 +513,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.dark.border,
     alignItems: 'center',
+  },
+  fullScreenModalContent: {
+    width: '100%',
+    backgroundColor: Colors.dark.card,
+    borderRadius: 20,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
   },
   modalIconWrap: {
     width: 60,
@@ -449,6 +536,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 8,
+    textAlign: 'center',
   },
   modalSubtitle: {
     color: Colors.dark.muted,
@@ -484,5 +572,83 @@ const styles = StyleSheet.create({
     color: Colors.dark.muted,
     fontSize: 16,
     fontWeight: '600',
+  },
+  gridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
+  gridItem: {
+    width: '100%',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginBottom: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+  },
+  gridCodeText: {
+    color: '#FFF',
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  cautionBox: {
+    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.4)',
+  },
+  cautionTitle: {
+    color: '#EF4444',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  cautionText: {
+    color: '#EF4444',
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#06B6D4',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  checkboxChecked: {
+    backgroundColor: '#06B6D4',
+  },
+  checkboxLabel: {
+    flex: 1,
+    color: '#FFF',
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  continueBtn: {
+    backgroundColor: '#06B6D4',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  continueBtnDisabled: {
+    backgroundColor: '#06B6D450',
+  },
+  continueBtnText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: 'bold',
   }
 });

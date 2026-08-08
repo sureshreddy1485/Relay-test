@@ -9,18 +9,18 @@ const { uploadToCloudinary } = require('../utils/cloudinaryUpload');
 
 const crypto = require('crypto');
 
-// Generate 9 one-time recovery codes
+// Generate 8 one-time recovery codes
 const generateRecoveryCodes = () => {
   const codes = [];
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  for (let i = 0; i < 9; i++) {
+  for (let i = 0; i < 8; i++) {
     let part1 = '';
     let part2 = '';
     for (let j = 0; j < 4; j++) {
       part1 += chars.charAt(Math.floor(Math.random() * chars.length));
       part2 += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-    codes.push(`${part1}-${part2}`);
+    codes.push(`RELAY-${part1}-${part2}`);
   }
   return codes;
 };
@@ -85,6 +85,44 @@ const signup = asyncHandler(async (req, res) => {
     profilePicture,
     devices: [{ deviceId: sessionId, deviceName, lastActive: Date.now() }]
   });
+
+  const relayBotId = getRelayBotId();
+  if (relayBotId) {
+    const relayChat = await Chat.create({
+      isGroupChat: false,
+      users: [user._id, relayBotId],
+      disappearAfter: 0,
+    });
+    
+    const welcomeMsg = `🚀 **WELCOME TO RELAY V1.0** 🚀
+
+We are thrilled to officially welcome you to Relay — the lightning-fast, ultra-secure messaging platform. We've packed this release with incredible features. Here is your official patch note guide to everything you can do:
+
+💬 **Instant Messaging & Media**
+Chat with your friends effortlessly. Send texts, voice notes, photos, and files. Made a typo? You have 15 minutes to edit your messages.
+
+👻 **Disappearing Messages**
+Privacy is our priority. Tap the '+' button to send 'View Once' media, or enable disappearing messages in any chat's settings to have all messages self-destruct automatically.
+
+🤖 **Meet Mica & Mars (AI Bots)**
+Relay features two native AI companions! Mica is helpful and friendly. Mars is sarcastic and witty. In any group chat, admins can instantly switch the active bot by typing \`!swap\`. Ask them anything! (Mica will respond if you use help and Mars will respond for command guide)
+
+🎮 **Play Games & Compete**
+Bored? Just type \`!scramble\` in any group chat with Mica or Mars. The bot will jumble a word, and everyone can race to solve it. Your scores are tracked on the Global Leaderboard!
+
+👥 **Communities & Group Tags**
+Build your community by creating Group Chats. Every group has a unique 'Group Tag' that others can search to join instantly!
+
+🔔 **Native Stacked Notifications**
+Even if your app is completely closed, our native background engine ensures you never miss a message. You can even reply and mark messages as read directly from your lock screen.
+
+🔒 **Privacy Control**
+Go to Settings to fine-tune your visibility. Hide your Last Seen, Profile Picture, or Read Receipts whenever you want.
+
+We hope you love using Relay as much as we loved building it. Enjoy chatting!`;
+    
+    await BotManager.sendCustomMessage(relayChat, null, relayBotId, welcomeMsg, 'text');
+  }
 
   res.status(201).json({
     success: true,
@@ -393,7 +431,7 @@ const getSecurityStatus = asyncHandler(async (req, res) => {
     (date) => Date.now() - new Date(date).getTime() < THIRTY_DAYS_MS
   );
   
-  const totalCodes = user.recoveryCodes?.length || 9;
+  const totalCodes = 8;
   const usedCodes = user.recoveryCodes?.filter((c) => c.used).length || 0;
   const generatedAt = user.recoveryCodesGeneratedAt || user.createdAt;
 
@@ -431,7 +469,7 @@ const regenerateRecoveryCodes = asyncHandler(async (req, res) => {
   }
 
   const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
-  const totalCodes = user.recoveryCodes?.length || 9;
+  const totalCodes = user.recoveryCodes?.length || 8;
   const usedCodes = user.recoveryCodes?.filter((c) => c.used).length || 0;
   const generatedAt = user.recoveryCodesGeneratedAt || user.createdAt;
 

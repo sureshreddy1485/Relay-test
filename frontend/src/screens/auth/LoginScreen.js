@@ -53,6 +53,17 @@ export default function LoginScreen({ navigation }) {
     ]).start();
   };
 
+  const handleRemoveSavedLogin = async (identifierToRemove) => {
+    const updatedAccounts = savedAccounts.filter(acc => acc.identifier !== identifierToRemove);
+    setSavedAccounts(updatedAccounts);
+    await AsyncStorage.setItem('relay_saved_logins', JSON.stringify(updatedAccounts));
+    if (identifier === identifierToRemove) {
+      setIdentifier('');
+      setPassword('');
+      setSaveLogin(false);
+    }
+  };
+
   const handleLogin = async () => {
     clearError();
     if (!identifier.trim() || !password.trim()) return shake();
@@ -129,6 +140,13 @@ export default function LoginScreen({ navigation }) {
                       setSaveLogin(true);
                     }}
                   >
+                    <TouchableOpacity
+                      style={{ position: 'absolute', top: 6, right: 6, zIndex: 10, padding: 2, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 12 }}
+                      onPress={() => handleRemoveSavedLogin(acc.identifier)}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <Ionicons name="close" size={14} color={Colors.dark.muted} />
+                    </TouchableOpacity>
                     {acc.avatar ? (
                       <Image source={{ uri: acc.avatar }} style={{ width: 44, height: 44, borderRadius: 22, marginBottom: 8 }} />
                     ) : (

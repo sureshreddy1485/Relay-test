@@ -33,6 +33,7 @@ export default function SignupScreen({ navigation }) {
   const [generatedCodes, setGeneratedCodes] = useState([]);
   const [copied, setCopied] = useState(false);
   const [pendingSession, setPendingSession] = useState(null);
+  const [understandChecked, setUnderstandChecked] = useState(false);
 
   useEffect(() => {
     const show = Keyboard.addListener('keyboardDidShow', (e) => {
@@ -160,10 +161,11 @@ export default function SignupScreen({ navigation }) {
       const FileSystem = require('expo-file-system');
       const Sharing = require('expo-sharing');
       
-      const fileContent = `====================================\n        RELAY RECOVERY CODES\n====================================\n\nAccount: ${form.email || form.username}\nGenerated: ${new Date().toLocaleString()}\n\nIMPORTANT: Save these 8 codes in a safe place. Each code can be used once to reset your password if you forget it.\n\n` + generatedCodes.map((c, i) => `${i + 1}. ${c}`).join('\n') + `\n\n====================================\n`;
+      const displayCodes = generatedCodes.slice(0, 8).map(c => c.startsWith('RELAY-') ? c : `RELAY-${c}`);
+      const fileContent = `====================================\n        RELAY RECOVERY CODES\n====================================\n\nAccount: ${form.email || form.username}\nGenerated: ${new Date().toLocaleString()}\n\nIMPORTANT: Save these 8 codes in a safe place. Each code can be used once to reset your password if you forget it.\n\n` + displayCodes.map((c, i) => `${i + 1}. ${c}`).join('\n') + `\n\n====================================\n`;
 
       const dir = FileSystem.cacheDirectory || FileSystem.documentDirectory;
-      const fileUri = `${dir}Relay_Recovery_Codes.txt`;
+      const fileUri = `${dir}relax_recovery_codes.txt`;
       await FileSystem.writeAsStringAsync(fileUri, fileContent, { encoding: FileSystem.EncodingType?.UTF8 || 'utf8' });
 
       if (Sharing && typeof Sharing.shareAsync === 'function' && await Sharing.isAvailableAsync()) {
@@ -209,7 +211,7 @@ export default function SignupScreen({ navigation }) {
             <strong>Notice:</strong> Keep these 8 one-time recovery codes confidential. Each code can be used exactly once to regain access if you lose your password.
           </div>
           <div class="grid">
-            ${generatedCodes.map((c, i) => `<div class="code-box">${i + 1}. ${c}</div>`).join('')}
+            ${generatedCodes.slice(0, 8).map(c => c.startsWith('RELAY-') ? c : `RELAY-${c}`).map((c, i) => `<div class="code-box">${i + 1}. ${c}</div>`).join('')}
           </div>
           <div class="footer">
             Relay Messaging App &bull; End-to-End Account Protection
@@ -220,17 +222,20 @@ export default function SignupScreen({ navigation }) {
 
       const Print = require('expo-print');
       const Sharing = require('expo-sharing');
+      const FileSystem = require('expo-file-system');
       
       const { uri } = await Print.printToFileAsync({ html: htmlContent });
+      const pdfUri = `${FileSystem.cacheDirectory}relax_recovery_codes.pdf`;
+      await FileSystem.copyAsync({ from: uri, to: pdfUri });
       
       if (Sharing && typeof Sharing.shareAsync === 'function' && await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(uri, {
+        await Sharing.shareAsync(pdfUri, {
           mimeType: 'application/pdf',
           dialogTitle: 'Save Recovery Codes (PDF)',
           UTI: 'com.adobe.pdf',
         });
       } else {
-        Alert.alert('PDF Generated', `PDF saved to:\n${uri}`);
+        Alert.alert('PDF Generated', `PDF saved to:\n${pdfUri}`);
       }
     } catch (err) {
       saveAsTxt();
@@ -380,7 +385,7 @@ export default function SignupScreen({ navigation }) {
 
       {/* Recovery Codes Modal */}
       <Modal visible={showCodesModal} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
+        <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.95)' }]}>
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
               <Ionicons name="shield-checkmark" size={32} color={Colors.accentGreen} />
@@ -391,13 +396,35 @@ export default function SignupScreen({ navigation }) {
             </View>
 
             <View style={styles.codesGrid}>
-              {generatedCodes.map((code, idx) => (
+              {generatedCodes.slice(0, 8).map(c => c.startsWith('RELAY-') ? c : `RELAY-${c}`).map((code, idx) => (
                 <View key={idx} style={styles.codeBadge}>
                   <Text style={styles.codeIndex}>{idx + 1}.</Text>
                   <Text style={styles.codeText}>{code}</Text>
                 </View>
               ))}
             </View>
+
+            <View style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)', borderRadius: 12, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.4)' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                <Ionicons name="warning" size={20} color="#EF4444" style={{ marginRight: 8 }} />
+                <Text style={{ color: '#EF4444', fontSize: 16, fontWeight: 'bold' }}>IMPORTANT</Text>
+              </View>
+              <Text style={{ color: '#EF4444', fontSize: 13, lineHeight: 20 }}>
+                If you lose these recovery codes, there is NO way to recover your account. For your privacy and security, we do not store or display these codes again. Please save them before continuing.
+              </Text>
+            </View>
+
+            <TouchableOpacity 
+              style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 24 }}
+              onPress={() => setUnderstandChecked(!understandChecked)}
+            >
+              <View style={[{ width: 24, height: 24, borderRadius: 6, borderWidth: 2, borderColor: Colors.primary, justifyContent: 'center', alignItems: 'center', marginRight: 12 }, understandChecked && { backgroundColor: Colors.primary }]}>
+                {understandChecked && <Ionicons name="checkmark" size={16} color="#FFF" />}
+              </View>
+              <Text style={{ flex: 1, color: '#FFF', fontSize: 14, lineHeight: 20 }}>
+                I understand that if I lose these recovery codes, my account cannot be recovered.
+              </Text>
+            </TouchableOpacity>
 
             {/* Action Buttons Row */}
             <View style={styles.actionRow}>
@@ -417,7 +444,7 @@ export default function SignupScreen({ navigation }) {
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity onPress={handleModalDone} style={styles.doneBtn} activeOpacity={0.85}>
+            <TouchableOpacity onPress={handleModalDone} disabled={!understandChecked} style={[styles.doneBtn, !understandChecked && { opacity: 0.5 }]} activeOpacity={0.85}>
               <LinearGradient colors={[Colors.primary, Colors.primaryDark]} style={styles.doneBtnGrad}>
                 <Text style={styles.doneBtnText}>I Have Saved My Codes</Text>
               </LinearGradient>
@@ -502,7 +529,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   codeBadge: {
-    width: '48%',
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.dark.input,

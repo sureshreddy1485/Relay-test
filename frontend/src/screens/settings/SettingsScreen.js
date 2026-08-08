@@ -72,7 +72,7 @@ import { useAlert } from '../../components/CustomAlert';
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function SettingsScreen({ navigation }) {
-  const { user, updateUser, logout } = useAuthStore();
+  const { user, updateUser, logout, removeSavedAccount } = useAuthStore();
   const { showAlert } = useAlert();
 
   const [privacy, setPrivacy] = useState({
@@ -303,6 +303,9 @@ export default function SettingsScreen({ navigation }) {
             try {
               await api.delete('/users/profile/delete');
               disconnectSocket();
+              if (user && user._id) {
+                await removeSavedAccount(user._id);
+              }
               await logout();
             } catch (e) {
               showAlert('Error', e.message || 'Delete failed');

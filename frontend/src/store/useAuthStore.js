@@ -102,6 +102,13 @@ const useAuthStore = create((set, get) => ({
     return true;
   },
 
+  removeSavedAccount: async (userId) => {
+    const saved = get().savedAccounts;
+    const newSaved = saved.filter(a => String(a?.user?._id) !== String(userId));
+    set({ savedAccounts: newSaved });
+    await AsyncStorage.setItem('relay_saved_accounts', JSON.stringify(newSaved));
+  },
+
   signup: async (formData) => {
     set({ isLoading: true, error: null });
     try {
