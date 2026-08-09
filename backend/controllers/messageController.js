@@ -733,6 +733,9 @@ const broadcastAdminUpdate = asyncHandler(async (req, res) => {
   const users = await User.find({ role: 'user', username: { $nin: ['relay_bot', 'relay', 'mica_bot'] } });
   let sentCount = 0;
 
+  const io = req.app.get('io');
+  let pushMessages = [];
+
   for (const user of users) {
     try {
       let chat = await Chat.findOne({
@@ -753,16 +756,118 @@ const broadcastAdminUpdate = asyncHandler(async (req, res) => {
         });
       }
 
-      const newMessage = await Message.create({
+      let message = await Message.create({
         sender: botUser._id,
         content: content,
         chat: chat._id,
         messageType: 'text'
       });
+      message = await populateMessage(Message.findById(message._id));
 
-      await Chat.findByIdAndUpdate(chat._id, { latestMessage: newMessage._id });
+      await Chat.findByIdAndUpdate(chat._id, { latestMessage: message._id });
       sentCount++;
-    } catch (err) {}
+
+      if (io) {
+        const userSpecificMessage = message.toObject();
+        userSpecificMessage.sender = sanitizeUser(userSpecificMessage.sender, user._id);
+        if (userSpecificMessage.chat && userSpecificMessage.chat.users) {
+           userSpecificMessage.chat.users = userSpecificMessage.chat.users.map(u => sanitizeUser(u, user._id));
+        }
+        io.to(user._id.toString()).emit('new_message', userSpecificMessage);
+      }
+
+      let pushSent = false;
+      let pushBody = content.replace(/[*_~`]/g, '');
+      const timeOpts = { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' };
+      const timeStr = new Date().toLocaleTimeString('en-IN', timeOpts).toUpperCase();
+      pushBody = `[${timeStr}] ${pushBody}`;
+      const title = 'Relay Update';
+
+      if (user.fcmToken) {
+        pushMessages.push({
+          type: 'fcm',
+          token: user.fcmToken,
+          data: {
+            chatId: chat._id.toString(),
+            sender: JSON.stringify({ _id: botUser._id, username: botUser.username, displayName: botUser.displayName, profilePicture: botUser.profilePicture }),
+            chat: JSON.stringify({ isGroupChat: false }),
+            title: title,
+            body: pushBody,
+            imageUrl: '',
+          }
+        });
+        pushSent = true;
+      } else if (user.pushToken && Expo.isExpoPushToken(user.pushToken)) {
+        const expoBody = `Relay Bot: ${pushBody}`;
+        pushMessages.push({
+          type: 'expo',
+          to: user.pushToken,
+          channelId: 'relay-messages-v5',
+          sound: 'relay_notification_sound.mp3',
+          color: '#2DD4BF',
+          title: title,
+          body: expoBody,
+          data: { chatId: chat._id.toString() },
+        });
+        pushSent = true;
+      }
+
+      if (pushSent) {
+        if (!message.deliveredTo) message.deliveredTo = [];
+        if (!message.deliveredTo.includes(user._id)) {
+           message.deliveredTo.push(user._id);
+           await message.save();
+        }
+      }
+
+    } catch (err) {
+      console.error('Error broadcasting to user:', err);
+    }
+  }
+
+  // Send push notifications asynchronously
+  if (pushMessages.length > 0) {
+    const expoMessages = pushMessages.filter(m => m.type === 'expo');
+    const fcmMessages = pushMessages.filter(m => m.type === 'fcm');
+
+    if (expoMessages.length > 0) {
+      let chunks = expo.chunkPushNotifications(expoMessages);
+      (async () => {
+        for (let chunk of chunks) {
+          try {
+            await expo.sendPushNotificationsAsync(chunk);
+          } catch (error) {
+            console.error('Error sending Expo broadcast notification:', error);
+          }
+        }
+      })();
+    }
+
+    if (fcmMessages.length > 0) {
+      (async () => {
+        const admin = require('firebase-admin');
+        if (admin.apps.length > 0) {
+          for (let msg of fcmMessages) {
+            try {
+              await admin.messaging().send({
+                token: msg.token,
+                data: msg.data,
+                android: {
+                  priority: 'high',
+                  ttl: 86400 * 1000
+                },
+                apns: {
+                  headers: { 'apns-priority': '10' },
+                  payload: { aps: { contentAvailable: true, mutableContent: true } },
+                },
+              });
+            } catch (error) {
+              console.error('Error sending FCM broadcast push notification:', error);
+            }
+          }
+        }
+      })();
+    }
   }
 
   res.status(200).json({ success: true, message: `Broadcast sent to ${sentCount} users.` });

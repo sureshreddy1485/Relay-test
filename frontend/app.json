@@ -34,6 +34,14 @@
         "android.permission.VIBRATE",
         "android.permission.RECEIVE_BOOT_COMPLETED",
         "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.VIBRATE",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
         "android.permission.POST_NOTIFICATIONS"
       ],
       "googleServicesFile": "./google-services.json"
@@ -97,7 +105,7 @@
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/c554c8a4-c5b3-49a9-bc40-44d3d737700a"
+      "url": "https://u.expo.dev/2d81ed8e-3ff7-4d9d-b712-bda53f83eda1"
     }
   }
 }

@@ -43,6 +43,7 @@ import { Colors, AppThemes } from './src/theme/colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function App() {
+  console.log('App loaded - testing OTA update');
   const { hydrate, user, isAuthenticated } = useAuthStore();
   const [themeLoaded, setThemeLoaded] = useState(false);
   const [splashVisible, setSplashVisible] = useState(true);
