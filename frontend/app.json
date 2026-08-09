@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Relay",
-    "slug": "relay-new",
+    "slug": "relay",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -97,15 +97,15 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "2d81ed8e-3ff7-4d9d-b712-bda53f83eda1"
+        "projectId": "f6890c83-a8dc-4728-a309-3ef4777dab78"
       }
     },
-    "owner": "sureshsekhar27",
+    "owner": "sureshreddy36",
     "runtimeVersion": {
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/2d81ed8e-3ff7-4d9d-b712-bda53f83eda1"
+      "url": "https://u.expo.dev/f6890c83-a8dc-4728-a309-3ef4777dab78"
     }
   }
 }

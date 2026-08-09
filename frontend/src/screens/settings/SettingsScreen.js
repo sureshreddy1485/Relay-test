@@ -662,7 +662,11 @@ export default function SettingsScreen({ navigation }) {
           />
         </View>
 
-        <Text style={styles.version}>Relay v1.0.0</Text>
+        <View style={styles.footer}>
+          <Ionicons name="heart" size={32} color="#EF4444" style={{ marginBottom: 8 }} />
+          <Text style={styles.footerText}>Made with love</Text>
+          <Text style={styles.versionText}>Relay Version 1.0.0</Text>
+        </View>
       </ScrollView>
 
       {/* ── Profile Actions Sheet (Bottom Sheet Modal) ────────────────────── */}
@@ -1003,7 +1007,21 @@ const styles = StyleSheet.create({
   rowSubtitle: { fontSize: 12, color: Colors.dark.muted, marginTop: 1 },
   rowRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   rowValue: { fontSize: 14, color: Colors.dark.muted },
-  version: { textAlign: 'center', color: Colors.dark.muted, fontSize: 12, marginVertical: 28 },
+  footer: {
+    alignItems: 'center',
+    marginTop: 32,
+    marginBottom: 16,
+  },
+  footerText: {
+    color: Colors.dark.muted,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  versionText: {
+    color: Colors.dark.muted,
+    fontSize: 12,
+    marginTop: 4,
+  },
 
   // Bottom Sheet
   sheetOverlay: {

@@ -124,11 +124,6 @@ export default function HelpScreen({ navigation }) {
           />
         ))}
 
-        <View style={styles.footer}>
-          <Ionicons name="heart" size={32} color="#EF4444" style={{ marginBottom: 8 }} />
-          <Text style={styles.footerText}>Made with love</Text>
-          <Text style={styles.versionText}>Relay Version 1.0.0</Text>
-        </View>
       </ScrollView>
     </View>
   );
@@ -213,20 +208,5 @@ const styles = StyleSheet.create({
     color: '#D4D4D8',
     fontSize: 14,
     lineHeight: 22,
-  },
-  footer: {
-    alignItems: 'center',
-    marginTop: 32,
-    marginBottom: 16,
-  },
-  footerText: {
-    color: Colors.dark.muted,
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  versionText: {
-    color: Colors.dark.muted,
-    fontSize: 12,
-    marginTop: 4,
   }
 });
