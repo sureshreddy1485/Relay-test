@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, Image, StatusBar, Alert,
@@ -411,27 +412,30 @@ export default function ChatRoomScreen({ route, navigation }) {
       )
     : chatMessages;
 
-  useEffect(() => {
-    joinChat(chat._id);
-    fetchMessages(chat._id);
-    clearUnread(chat._id);
-    markRead(chat._id, user?._id);
+  useFocusEffect(
+    useCallback(() => {
+      joinChat(chat._id);
+      fetchMessages(chat._id);
+      clearUnread(chat._id);
+      markRead(chat._id, user?._id);
+      useChatStore.getState().selectChat(chat);
 
-    // ── Real-time group refresh: update member count & user list live ──
-    const socket = getSocket();
-    const handleChatUpdated = (updatedChat) => {
-      if (updatedChat._id === chat._id || updatedChat._id?.toString() === chat._id?.toString()) {
-        useChatStore.getState().updateChat(chat._id, updatedChat);
-      }
-    };
-    if (socket) socket.on('chat_updated', handleChatUpdated);
+      // ── Real-time group refresh: update member count & user list live ──
+      const socket = getSocket();
+      const handleChatUpdated = (updatedChat) => {
+        if (updatedChat._id === chat._id || updatedChat._id?.toString() === chat._id?.toString()) {
+          useChatStore.getState().updateChat(chat._id, updatedChat);
+        }
+      };
+      if (socket) socket.on('chat_updated', handleChatUpdated);
 
-    return () => {
-      leaveChat(chat._id);
-      useChatStore.getState().selectChat(null);
-      if (socket) socket.off('chat_updated', handleChatUpdated);
-    };
-  }, [chat._id]);
+      return () => {
+        leaveChat(chat._id);
+        useChatStore.getState().selectChat(null);
+        if (socket) socket.off('chat_updated', handleChatUpdated);
+      };
+    }, [chat._id, user?._id])
+  );
 
   // On first load, find the first unread message index
   useEffect(() => {

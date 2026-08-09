@@ -204,7 +204,7 @@ const login = asyncHandler(async (req, res) => {
 
   // Send a security notification from Relay (Hardcoded text, zero Groq API usage)
   let relayId = getRelayBotId();
-  if (relayId) {
+  if (relayId && user._id.toString() !== relayId.toString()) {
     try {
       let chat = await Chat.findOne({
         isGroupChat: false,

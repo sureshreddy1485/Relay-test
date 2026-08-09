@@ -14,11 +14,24 @@ import { connectSocket } from './src/services/socketService';
 LogBox.ignoreLogs(['Warning: ...', 'Animated: `useNativeDriver`']);
 
 Notifications.setNotificationHandler({
-  handleNotification: async () => {
+  handleNotification: async (notification) => {
     const isActive = AppState.currentState === 'active';
+    let suppress = false;
+
+    if (isActive) {
+      const data = notification.request.content.data;
+      if (data && data.chatId) {
+        const useChatStore = require('./src/store/useChatStore').default;
+        const { selectedChat } = useChatStore.getState();
+        if (selectedChat && selectedChat._id?.toString() === data.chatId?.toString()) {
+          suppress = true;
+        }
+      }
+    }
+
     return {
-      shouldShowAlert: true, // Always show system banner
-      shouldPlaySound: true, // System sound respects silent mode
+      shouldShowAlert: !suppress,
+      shouldPlaySound: !suppress,
       shouldSetBadge: true,
     };
   },
