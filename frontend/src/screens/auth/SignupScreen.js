@@ -172,7 +172,7 @@ export default function SignupScreen({ navigation }) {
       const fileContent = `====================================\n        RELAY RECOVERY CODES\n====================================\n\nAccount: ${form.email || form.username}\nGenerated: ${new Date().toLocaleString()}\n\nIMPORTANT: Save these 8 codes in a safe place. Each code can be used once to reset your password if you forget it.\n\n` + displayCodes.map((c, i) => `${i + 1}. ${c}`).join('\n') + `\n\n====================================\n`;
 
       const dir = FileSystem.cacheDirectory || FileSystem.documentDirectory;
-      const fileUri = `${dir}relax_recovery_codes.txt`;
+      const fileUri = `${dir}relay_recovery_codes.txt`;
       await FileSystem.writeAsStringAsync(fileUri, fileContent, { encoding: FileSystem.EncodingType?.UTF8 || 'utf8' });
 
       if (Sharing && typeof Sharing.shareAsync === 'function' && await Sharing.isAvailableAsync()) {
@@ -232,7 +232,7 @@ export default function SignupScreen({ navigation }) {
       const FileSystem = require('expo-file-system/legacy');
       
       const { uri } = await Print.printToFileAsync({ html: htmlContent });
-      const pdfUri = `${FileSystem.cacheDirectory}relax_recovery_codes.pdf`;
+      const pdfUri = `${FileSystem.cacheDirectory}relay_recovery_codes.pdf`;
       await FileSystem.copyAsync({ from: uri, to: pdfUri });
       
       if (Sharing && typeof Sharing.shareAsync === 'function' && await Sharing.isAvailableAsync()) {

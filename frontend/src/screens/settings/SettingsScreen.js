@@ -366,7 +366,8 @@ export default function SettingsScreen({ navigation }) {
           ]
         );
       } else {
-        showAlert('✅ Up to Date', 'You are already on the latest version of Relay!');
+        const debugInfo = `\n\nChannel: ${Updates.channel || 'unknown'}\nRuntime: ${Updates.runtimeVersion || 'unknown'}\nUpdateId: ${Updates.updateId || 'embedded'}`;
+        showAlert('✅ Up to Date', 'You are already on the latest version of Relay!' + debugInfo);
       }
     } catch (e) {
       setCheckingUpdate(false);
