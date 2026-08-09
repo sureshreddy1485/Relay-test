@@ -375,12 +375,8 @@ export default function SettingsScreen({ navigation }) {
         showAlert('⏱ Slow Connection', 'Update check timed out. Please check your internet and try again.');
       } else if (e.message?.includes('rejected') || e.message?.includes('already')) {
         showAlert(
-          '🔄 Update in Progress',
-          'An update is already being downloaded. Restart the app to apply it!',
-          [
-            { text: 'Restart Now', onPress: () => { try { Updates.reloadAsync(); } catch (_) {} } },
-            { text: 'Later', style: 'cancel' },
-          ]
+          '🔄 Background Process Running',
+          'The app is currently checking or downloading an update in the background. Please wait a few seconds and try again.'
         );
       } else {
         showAlert('⚠️ Notice', 'Unable to check for updates. Make sure you have internet access.');
