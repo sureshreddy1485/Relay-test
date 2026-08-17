@@ -118,7 +118,7 @@ class BotManager {
     const isStandaloneHelp = resolvedCommand === 'help' || resolvedCommand.startsWith('help ');
     const isStandaloneGuide = resolvedCommand === 'guide' || resolvedCommand.startsWith('guide ');
     const isGameCommand = CommandRegistry.isValidGameCommand(resolvedCommand);
-    const standaloneCommands = ['score', 'scores', 'activity', 'leaderboard', 'aliases', 'reset', 'remove'];
+    const standaloneCommands = ['score', 'scores', 'activity', 'leaderboard', 'aliases', 'reset', 'remove', 'clear'];
     const isStandaloneUtility = standaloneCommands.includes(resolvedCommand.split(' ')[0]) || resolvedCommand.startsWith('summarize ') || resolvedCommand.startsWith('calc ') || resolvedCommand.startsWith('calculate ');
     const isMath = /^[0-9+\-*/().\s]+$/.test(resolvedCommand.replace(/\s+/g, ''));
 
@@ -215,7 +215,7 @@ class BotManager {
             helpText = `**📈 Mica's Stats & Leaderboards**\n\n• score\n• activity\n• leaderboard\n\n💡 **Tip: For a deep dive, type \`help <command>\` — e.g. \`help score\`**`;
             break;
           case 'admin':
-            helpText = `**🛠️ Mica's Group Management**\n\n• aliases\n• remove <alias>\n• remove inactive <days>\n• reset\n\n💡 **Tip: For a deep dive, type \`help <command>\` — e.g. \`help aliases\`**`;
+            helpText = `**🛠️ Mica's Group Management**\n\n• aliases\n• remove <alias>\n• remove inactive <days>\n• reset\n• clear\n\n💡 **Tip: For a deep dive, type \`help <command>\` — e.g. \`help aliases\`**`;
             break;
           default:
             helpText = `I don't have a help page for '${helpTarget}'. Try asking about a specific category like 'help games'.`;
@@ -403,6 +403,28 @@ class BotManager {
       }
     }
 
+    if (cleanCommandText === 'clear') {
+      if (!chat.isGroupChat) return this.sendCustomMessage(chat, io, activeBotId, "This command can only be used in groups.");
+      if (!isGroupAdmin) return this.sendCustomMessage(chat, io, activeBotId, "Only group admins can wipe the chat.");
+
+      try {
+        const adminName = incomingMsg.sender.displayName || incomingMsg.sender.username;
+        const Message = require('../models/Message');
+        await Message.updateMany(
+          { chat: chat._id },
+          { $addToSet: { deletedBy: { $each: chat.users } } }
+        );
+        
+        const wipeMsg = activeBotStr === 'mars'
+          ? `Chat wiped by ${adminName}. Nothing to see here anymore.`
+          : `🧹 The chat has been cleared by ${adminName}.`;
+        
+        return this.sendCustomMessage(chat, io, activeBotId, wipeMsg);
+      } catch (e) {
+        return this.sendCustomMessage(chat, io, activeBotId, "Failed to clear the chat.");
+      }
+    }
+
     if (resolvedCommand === 'score' || resolvedCommand === 'scores') {
       const settings = await GroupGameSettings.findOne({ groupId: chat._id });
       let content = `🏆 **Group Scores** 🏆\n\n`;
@@ -534,7 +556,7 @@ class BotManager {
     // Arrays of patterns to check
     const greetings = ['hi', 'hello', 'hey', 'heya', 'hlo', 'sup', 'yo', 'greetings', 'hiii'];
     const wyd = ['wyd', 'what you doing', 'what are you doing', 'whats up', 'wazzup', 'what are u doing', 'what u doing'];
-    const howAreYou = ['how are you', 'how r u', 'how are u', 'how is it going', 'hru'];
+    const howAreYou = ['how are you', 'how r u', 'how are u', 'how is it going', 'hru', 'how do you do', 'hows it going', 'hw r you'];
     const whoAreYou = ['who are you', 'what are you', 'ur name', 'your name', 'who r u', 'who are u'];
     const thanks = ['thanks', 'thank you', 'thx', 'tysm', 'thank u', 'ty'];
     const bye = ['bye', 'goodbye', 'good night', 'gn', 'cya', 'see ya', 'goodnight', 'see you'];
@@ -834,20 +856,25 @@ class BotManager {
 
   async onUserJoinedGroup(chat, newUserId, io) {
     try {
-      const activeBotStr = await this.getActiveBotStr(chat._id);
-      const activeBotId = await this.getActiveBotId(chat._id);
+      const { getMicaBotId, getMarsBotId } = require('./botHelper');
+      const micaId = getMicaBotId();
+      const marsId = getMarsBotId();
+
       const User = require('../models/User');
       const targetUser = await User.findById(newUserId);
       if (!targetUser) return;
+      
+      const userName = targetUser.displayName || targetUser.username;
 
-      let welcomeMsg = `Welcome ${targetUser.displayName || targetUser.username}!`;
-      if (activeBotStr === 'mars') {
-        welcomeMsg = `Welcome aboard, ${targetUser.displayName || targetUser.username}. Don't worry, I'll only judge you a little.`;
-      } else {
-        welcomeMsg = `Hello ${targetUser.displayName || targetUser.username}! Welcome to the group! ✨`;
+      if (micaId && chat.users.some(u => u.toString() === micaId.toString() || u._id?.toString() === micaId.toString())) {
+        const micaWelcome = `Hello ${userName}! Welcome to the group! ✨`;
+        await this.sendCustomMessage(chat, io, micaId, micaWelcome);
       }
 
-      await this.sendCustomMessage(chat, io, activeBotId, welcomeMsg);
+      if (marsId && chat.users.some(u => u.toString() === marsId.toString() || u._id?.toString() === marsId.toString())) {
+        const marsWelcome = `Welcome aboard, ${userName}. Don't worry, I'll only judge you a little.`;
+        await this.sendCustomMessage(chat, io, marsId, marsWelcome);
+      }
     } catch (e) {
       console.error('Error in onUserJoinedGroup:', e);
     }

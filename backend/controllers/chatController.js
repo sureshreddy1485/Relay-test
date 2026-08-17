@@ -225,9 +225,9 @@ const createGroupChat = asyncHandler(async (req, res) => {
       res.status(400);
       throw new Error('Group username must start with a letter or underscore and contain only letters, numbers, underscores, and dots');
     }
-    if (rawUsername.length < 8) {
+    if (rawUsername.length < 6) {
       res.status(400);
-      throw new Error('Group username must be at least 8 characters long');
+      throw new Error('Group username must be at least 6 characters long');
     }
     groupData.groupUsername = rawUsername;
   }
@@ -974,6 +974,65 @@ const setDisappearTimer = asyncHandler(async (req, res) => {
   res.status(200).json({ success: true, disappearAfter: chat.disappearAfter, message: fullMsg });
 });
 
+const clearChat = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const chat = await Chat.findById(id);
+
+  if (!chat) {
+    res.status(404);
+    throw new Error('Chat not found');
+  }
+
+  // If group chat and user is admin, wipe for everyone
+  const isGroupAdmin = chat.isGroupChat && (
+    chat.admins.some(adminId => adminId.toString() === req.user._id.toString()) ||
+    chat.groupAdmin?.toString() === req.user._id.toString()
+  );
+
+  const Message = require('../models/Message');
+
+  if (chat.isGroupChat && isGroupAdmin) {
+    // Wipe for everyone
+    await Message.updateMany(
+      { chat: chat._id },
+      { $addToSet: { deletedBy: { $each: chat.users } } }
+    );
+    
+    // Add system message
+    const BotManager = require('../utils/BotManager');
+    const { getMicaBotId, getMarsBotId } = require('../utils/botHelper');
+    const micaId = getMicaBotId();
+    const marsId = getMarsBotId();
+    
+    let activeBotId = micaId;
+    let botStr = 'mica';
+    if (marsId && chat.users.some(u => u.toString() === marsId.toString())) {
+      activeBotId = marsId;
+      botStr = 'mars';
+    } else if (micaId && chat.users.some(u => u.toString() === micaId.toString())) {
+      activeBotId = micaId;
+    }
+    
+    if (activeBotId) {
+      const io = req.app.get('io');
+      const adminName = req.user.displayName || req.user.username;
+      const wipeMsg = botStr === 'mars'
+        ? `Chat wiped by ${adminName}. Nothing to see here anymore.`
+        : `🧹 The chat has been cleared by ${adminName}.`;
+      await BotManager.sendCustomMessage(chat, io, activeBotId, wipeMsg);
+    }
+    
+    res.json({ success: true, wipedForEveryone: true });
+  } else {
+    // Wipe only for current user
+    await Message.updateMany(
+      { chat: chat._id },
+      { $addToSet: { deletedBy: req.user._id } }
+    );
+    res.json({ success: true, wipedForEveryone: false });
+  }
+});
+
 // @desc  Delete a chat (dismantle / remove conversation)
 // @route DELETE /api/chats/:id
 // @access Private
@@ -1280,6 +1339,7 @@ const getGroupPreview = asyncHandler(async (req, res) => {
 module.exports = {
   accessChat, getChats, createGroupChat, updateGroup, addToGroup, inviteToGroup,
   removeFromGroup, promoteToAdmin, demoteToMember, transferOwnership, leaveGroup,
+  clearChat,
   togglePinChat,
   toggleArchiveChat,
   toggleMuteChat,

@@ -518,7 +518,37 @@ export default function ChatRoomScreen({ route, navigation }) {
     if (isSendingRef.current) return;
     const content = text.trim();
     if (!content && !mediaFile && !pollData) return;
+
+    const cleanForBotCheck = content.replace(/[*_~`]/g, '').trim().toLowerCase();
+    const botMentionPattern = /^(?:@)?(?:mica|mars)\s+clear$/i;
+    const standalonePattern = /^clear$/i;
     
+    if (botMentionPattern.test(cleanForBotCheck) || standalonePattern.test(cleanForBotCheck)) {
+      const isGroupAdmin = chat.isGroupChat && (
+        chat.admins?.some(admin => admin._id === user?._id || admin === user?._id) ||
+        chat.groupAdmin?.toString() === user?._id?.toString()
+      );
+      if (isGroupAdmin) {
+        showAlert(
+          'Clear Chat for Everyone?',
+          'Are you sure you want to wipe the chat history for ALL members via the bot command?',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Clear',
+              style: 'destructive',
+              onPress: () => performSend(content, mediaFile, pollData)
+            }
+          ]
+        );
+        return;
+      }
+    }
+
+    performSend(content, mediaFile, pollData);
+  };
+
+  const performSend = async (content, mediaFile, pollData) => {
     isSendingRef.current = true;
     setIsSending(true);
     setText('');

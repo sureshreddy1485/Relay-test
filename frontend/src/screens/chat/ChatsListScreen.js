@@ -473,7 +473,38 @@ export default function ChatsListScreen({ navigation }) {
                     <Text style={styles.sheetActionLabel}>{user?.pinnedChats?.some(c => c.toString() === longPressChat._id?.toString()) ? 'Unpin Chat' : 'Pin Chat'}</Text>
                   </TouchableOpacity>
 
-                  <TouchableOpacity style={styles.sheetActionItem} onPress={() => { setLongPressChat(null); showAlert('Clear', 'Not implemented'); }}>
+                  <TouchableOpacity style={styles.sheetActionItem} onPress={() => {
+                    const id = longPressChat._id;
+                    const isGroupAdmin = longPressChat.isGroupChat && (
+                      longPressChat.admins?.some(admin => admin._id === user?._id || admin === user?._id) ||
+                      longPressChat.groupAdmin?.toString() === user?._id?.toString()
+                    );
+                    setLongPressChat(null);
+                    
+                    const title = isGroupAdmin ? 'Clear Chat for Everyone?' : 'Clear Chat?';
+                    const msg = isGroupAdmin ? 'This will wipe the chat history for ALL members.' : 'This will hide all current messages in this chat for you.';
+                    
+                    showAlert(
+                      title,
+                      msg,
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'Clear',
+                          style: 'destructive',
+                          onPress: async () => {
+                            try {
+                              await api.put(`/chats/${id}/clear`);
+                              useChatStore.getState().clearUnread(id);
+                              fetchChats();
+                            } catch (e) {
+                              showAlert('Error', e.message || 'Failed to clear chat');
+                            }
+                          }
+                        }
+                      ]
+                    );
+                  }}>
                     <Ionicons name="refresh-outline" size={20} color={Colors.dark.text} />
                     <Text style={styles.sheetActionLabel}>Clear Chat</Text>
                   </TouchableOpacity>

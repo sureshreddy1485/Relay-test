@@ -209,6 +209,12 @@ export default function MessageBubble({
     return u ? (u.displayName || u.username) : 'Unknown';
   };
 
+  const isHighlightMessage = isGroup && !isMine && message.content && (
+    message.content.includes('🏆 **Group Scores** 🏆') ||
+    message.content.includes('📊 **Group Activity**') ||
+    message.content.includes('🌍 **Global Group Leaderboard** 🌍')
+  );
+
   if (message.deletedForEveryone) {
     // Use content marker set by the store to distinguish the two cases
     const isDisappeared = message.content === 'Message disappeared';
@@ -797,7 +803,8 @@ export default function MessageBubble({
                 message.mediaType && styles.bubbleWithMedia,
                 { maxWidth: '100%' },
                 message.messageType === 'poll' && { width: 250, maxWidth: '90%' },
-                message._id === highlightedMessageId && { backgroundColor: Colors.primary + '33', borderWidth: 1, borderColor: Colors.accent }
+                message._id === highlightedMessageId && { backgroundColor: Colors.primary + '33', borderWidth: 1, borderColor: Colors.accent },
+                isHighlightMessage && { borderWidth: 1, borderColor: Colors.accent, backgroundColor: Colors.dark.card }
               ]}
             >
               {message.replyTo && (

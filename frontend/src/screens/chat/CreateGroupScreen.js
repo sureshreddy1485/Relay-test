@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, Alert, ActivityIndicator, Image, StatusBar, Platform,
+  ScrollView, Alert, ActivityIndicator, Image, StatusBar, Platform, KeyboardAvoidingView,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -87,8 +87,8 @@ export default function CreateGroupScreen({ navigation, route }) {
           setIsCreating(false);
           return;
         }
-        if (rawUsername.length < 8) {
-          Alert.alert('Error', 'Group username must be at least 8 characters long');
+        if (rawUsername.length < 6) {
+          Alert.alert('Error', 'Group username must be at least 6 characters long');
           setIsCreating(false);
           return;
         }
@@ -124,13 +124,17 @@ export default function CreateGroupScreen({ navigation, route }) {
         </TouchableOpacity>
       </View>
 
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        keyboardShouldPersistTaps="handled"
-        automaticallyAdjustKeyboardInsets
-        showsVerticalScrollIndicator={false}
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
+        style={{ flex: 1 }}
       >
-        {/* ── Group avatar ──────────────────────────────────────────────────── */}
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled"
+          automaticallyAdjustKeyboardInsets
+          showsVerticalScrollIndicator={false}
+        >
+          {/* ── Group avatar ──────────────────────────────────────────────────── */}
         <TouchableOpacity style={styles.avatarWrap} onPress={pickAvatar} activeOpacity={0.8}>
           {avatar ? (
             <Image source={{ uri: avatar.uri }} style={styles.avatar} />
@@ -347,7 +351,8 @@ export default function CreateGroupScreen({ navigation, route }) {
             )}
           </LinearGradient>
         </TouchableOpacity>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }

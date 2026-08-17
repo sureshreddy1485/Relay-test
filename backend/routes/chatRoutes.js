@@ -4,7 +4,7 @@ const {
   accessChat, getChats, createGroupChat, updateGroup, addToGroup, inviteToGroup,
   removeFromGroup, promoteToAdmin, demoteToMember, leaveGroup, togglePinChat,
   toggleArchiveChat, searchPublicChats, setDisappearTimer, toggleMuteChat,
-  deleteChat, updateChatTheme, updateChatSecurity, getGroupPreview,
+  deleteChat, clearChat, updateChatTheme, updateChatSecurity, getGroupPreview,
 } = require('../controllers/chatController');
 const { protect } = require('../middlewares/authMiddleware');
 const upload = require('../middlewares/uploadMiddleware');
@@ -24,6 +24,7 @@ router.put('/group/:id/transfer-ownership', protect, require('../controllers/cha
 router.put('/group/:id/leave', protect, leaveGroup);
 router.put('/:id/pin', protect, togglePinChat);
 router.put('/:id/archive', protect, toggleArchiveChat);
+router.put('/:id/clear', protect, clearChat);
 router.put('/:id/mute', protect, toggleMuteChat);
 router.put('/:id/disappear', protect, setDisappearTimer);
 router.put('/:id/theme', protect, updateChatTheme);

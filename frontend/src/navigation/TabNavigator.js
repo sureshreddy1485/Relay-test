@@ -42,6 +42,7 @@ export default function TabNavigator() {
   const [unseenStoriesCount, setUnseenStoriesCount] = React.useState(0);
   const [showAccManager, setShowAccManager] = React.useState(false);
   const [hasOtherUnread, setHasOtherUnread] = React.useState(false);
+  const [otherAccountsUnreadData, setOtherAccountsUnreadData] = React.useState({});
   const { savedAccounts, switchAccount, logout } = useAuthStore();
   const insets       = useSafeAreaInsets();
   const lastSettingsPressRef = React.useRef(0);
@@ -54,18 +55,30 @@ export default function TabNavigator() {
     const _user = state.user;
     if (!_savedAccounts || _savedAccounts.length <= 1 || !_user) {
       setHasOtherUnread(false);
+      setOtherAccountsUnreadData({});
       return;
     }
     
     let anyUnread = false;
+    let unreadDataObj = {};
     for (const acc of _savedAccounts || []) {
       if (!acc?.user?._id) continue;
       if (acc.user._id === _user?._id) continue;
       try {
         const res = await api.get('/chats', { headers: { Authorization: `Bearer ${acc.token}` }, ignore401: true });
-        if (res.data.chats.some(c => c.unreadCount > 0)) {
+        
+        let chatsCount = 0;
+        let msgsCount = 0;
+        res.data.chats.forEach(c => {
+          if (c.unreadCount > 0) {
+            chatsCount++;
+            msgsCount += c.unreadCount;
+          }
+        });
+
+        if (chatsCount > 0) {
           anyUnread = true;
-          break;
+          unreadDataObj[acc.user._id] = { chats: chatsCount, msgs: msgsCount };
         }
       } catch (e) {
         if (e.response?.status === 401) {
@@ -76,6 +89,7 @@ export default function TabNavigator() {
       }
     }
     setHasOtherUnread(anyUnread);
+    setOtherAccountsUnreadData(unreadDataObj);
   }, []);
 
   const fetchUnseenStories = React.useCallback(async () => {
@@ -278,7 +292,14 @@ export default function TabNavigator() {
                           {acc.user._id === user?._id ? (
                             <Text style={{ color: Colors.primary, fontSize: 13, fontWeight: '500' }}>Active Account</Text>
                           ) : (
-                            <Text style={{ color: Colors.dark.muted, fontSize: 13 }}>Tap to switch</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                              <Text style={{ color: Colors.dark.muted, fontSize: 13 }}>Tap to switch</Text>
+                              {otherAccountsUnreadData[acc.user._id] && (
+                                <Text style={{ color: Colors.accent, fontSize: 12, fontWeight: '600' }}>
+                                  • {otherAccountsUnreadData[acc.user._id].msgs} unread in {otherAccountsUnreadData[acc.user._id].chats} chat{otherAccountsUnreadData[acc.user._id].chats > 1 ? 's' : ''}
+                                </Text>
+                              )}
+                            </View>
                           )}
                         </View>
                       </View>

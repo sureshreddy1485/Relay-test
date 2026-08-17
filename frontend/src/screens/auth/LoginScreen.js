@@ -20,7 +20,7 @@ export default function LoginScreen({ navigation }) {
   const [showPass, setShowPass] = useState(false);
   const [saveLogin, setSaveLogin] = useState(false);
   const [savedAccounts, setSavedAccounts] = useState([]);
-  const { login, isLoading, error, clearError } = useAuthStore();
+  const { login, isLoading, error, clearError, savedAccounts: globalSavedAccounts } = useAuthStore();
   const shakeAnim = useRef(new Animated.Value(0)).current;
   const scrollRef = useRef();
 
@@ -154,15 +154,23 @@ export default function LoginScreen({ navigation }) {
                     >
                       <Ionicons name="close" size={14} color={Colors.dark.muted} />
                     </TouchableOpacity>
-                    {acc.avatar ? (
-                      <Image source={{ uri: acc.avatar }} style={{ width: 44, height: 44, borderRadius: 22, marginBottom: 8 }} />
-                    ) : (
-                      <LinearGradient colors={[Colors.primary, Colors.primaryDark]} style={{ width: 44, height: 44, borderRadius: 22, marginBottom: 8, alignItems: 'center', justifyContent: 'center' }}>
-                        <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 18 }}>
-                          {(acc.name || acc.username || acc.identifier || '?').charAt(0).toUpperCase()}
-                        </Text>
-                      </LinearGradient>
-                    )}
+                    {(() => {
+                      const upToDateUser = globalSavedAccounts?.find(a => 
+                        a?.user?.username === acc.identifier || 
+                        a?.user?.email === acc.identifier || 
+                        String(a?.user?._id) === String(acc.userId)
+                      )?.user;
+                      const avatarUrl = upToDateUser?.profilePicture || acc.avatar;
+                      return avatarUrl ? (
+                        <Image source={{ uri: avatarUrl }} style={{ width: 44, height: 44, borderRadius: 22, marginBottom: 8 }} />
+                      ) : (
+                        <LinearGradient colors={[Colors.primary, Colors.primaryDark]} style={{ width: 44, height: 44, borderRadius: 22, marginBottom: 8, alignItems: 'center', justifyContent: 'center' }}>
+                          <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 18 }}>
+                            {(acc.name || acc.username || acc.identifier || '?').charAt(0).toUpperCase()}
+                          </Text>
+                        </LinearGradient>
+                      );
+                    })()}
                     <Text style={{ color: Colors.dark.text, fontSize: 12, fontWeight: '600', textAlign: 'center', minHeight: 16 }} numberOfLines={1}>
                       {acc.name || acc.username || acc.identifier}
                     </Text>
