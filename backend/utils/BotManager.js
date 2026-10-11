@@ -16,6 +16,9 @@ class BotManager {
   }
 
   async processMessage(message, chat, io) {
+    // Bots operate STRICTLY in group chats only (disabled in 1-on-1 DMs)
+    if (!chat || !chat.isGroupChat) return;
+
     const micaId = getMicaBotId();
     const marsId = getMarsBotId();
     if (!micaId || !marsId) return;
@@ -295,8 +298,10 @@ class BotManager {
       if (!textToSummarize) return this.sendCustomMessage(chat, io, activeBotId, "Please provide some text to summarize. (e.g. `summarize This is a long story...`)");
 
       try {
-        const apiKey = activeBotStr === 'mars' ? process.env.MARS_GROQ_API_KEY : process.env.MICA_GROQ_API_KEY;
-        const model = activeBotStr === 'mars' ? 'qwen/qwen3.6-27b' : 'openai/gpt-oss-120b';
+        const apiKey = activeBotStr === 'mars' 
+          ? (process.env.MARS_GROQ_API_KEY || process.env.GROQ_API_KEY) 
+          : (process.env.MICA_GROQ_API_KEY || process.env.GROQ_API_KEY);
+        const model = activeBotStr === 'mars' ? 'qwen/qwen3.8-27b' : 'openai/gpt-oss-120b';
         const systemPrompt = activeBotStr === 'mars'
           ? 'You are Mars, a sarcastic, slightly arrogant assistant. Summarize the text provided by the user, but add a slightly mocking tone about how long-winded they are. Keep it short.'
           : 'You are Mica, a smart, concise AI assistant. Provide a brief summary of the text provided by the user. Keep it short and to the point.';
@@ -708,16 +713,19 @@ class BotManager {
 
     let replyContent = botStr === 'mars' ? "Interesting..." : "I am here!";
 
-    const apiKey = botStr === 'mars' ? process.env.MARS_GROQ_API_KEY : process.env.MICA_GROQ_API_KEY;
+    const apiKey = botStr === 'mars' 
+      ? (process.env.MARS_GROQ_API_KEY || process.env.GROQ_API_KEY) 
+      : (process.env.MICA_GROQ_API_KEY || process.env.GROQ_API_KEY);
 
     if (!apiKey) {
+      console.warn(`[BotManager] Missing Groq API key for ${botStr}. Set GROQ_API_KEY in environment variables.`);
       if (botStr === 'mica') {
         if (cleanContent.includes('roast')) replyContent = "You want a roast? Your code is so messy even a try-catch block gave up on it. Boom.";
         else if (cleanContent.includes('ping')) replyContent = "Pong! I'm alive and watching y'all 👀";
-        else replyContent = "Hi! I'm Mica!";
+        else replyContent = "Hi! I'm Mica! (To enable AI responses, add GROQ_API_KEY to your Render environment variables)";
         return this.sendCustomMessage(chat, io, botId, replyContent);
       } else {
-        const genericReplies = ["Interesting...", "That seems suspicious.", "Bold move."];
+        const genericReplies = ["Interesting...", "That seems suspicious.", "Bold move. (Set GROQ_API_KEY in Render to unlock my full brain)"];
         return this.sendCustomMessage(chat, io, botId, genericReplies[Math.floor(Math.random() * genericReplies.length)]);
       }
     }
@@ -735,14 +743,14 @@ class BotManager {
           { role: "system", content: systemPrompt },
           { role: "user", content: `${senderName} says: ${cleanContent}` }
         ],
-        model: botStr === 'mars' ? 'qwen/qwen3.6-27b' : 'openai/gpt-oss-120b',
-        temperature: 0.8,
-        max_tokens: 150,
+        model: botStr === 'mars' ? 'qwen/qwen3.8-27b' : 'openai/gpt-oss-120b',
+        max_tokens: 1024,
       });
 
-      replyContent = chatCompletion.choices[0]?.message?.content || "I have no words.";
+      const choice = chatCompletion.choices?.[0]?.message;
+      replyContent = choice?.content || choice?.reasoning || "I have no words.";
     } catch (err) {
-      console.error(`Groq AI error (${botStr}):`, err);
+      console.error(`Groq AI error (${botStr}):`, err.status || '', err.message || err);
       replyContent = "I'm having a bit of a technical hiccup. Ask me again in a moment?";
     }
 
